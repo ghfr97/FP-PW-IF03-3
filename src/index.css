@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { font-family: 'DM Sans', sans-serif; }
+}
+
+@layer utilities {
+  .machine-door-spin {
+    animation: machineSpin 2s linear infinite;
+  }
+  @keyframes machineSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .float-bubble {
+    animation: floatBubble 6s ease-in-out infinite;
+  }
+  @keyframes floatBubble {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.05); }
+  }
+}
