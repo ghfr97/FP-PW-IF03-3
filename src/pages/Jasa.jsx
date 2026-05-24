@@ -1,34 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import Toast, { showToast } from '../components/Toast.jsx'
 
-const services = [
-  {
-    icon: '👕', name: 'Cuci Pakaian', badge: 'Populer', badgeColor: 'bg-blue-100 text-blue-700',
-    desc: 'Cuci bersih menggunakan mesin front-load dengan detergen premium. Hasil bersih sempurna dan aman untuk semua jenis kain.',
-    features: ['✓ Detergen premium', '✓ Anti-bau & anti-bakteri', '✓ Selesai dalam 1 hari'],
-    price: 'Rp 6.000', unit: '/kg', highlight: false,
-  },
-  {
-    icon: '🔥', name: 'Setrika Pakaian', badge: null,
-    desc: 'Setrika rapi dengan uap panas, cocok untuk pakaian kerja, seragam, dan baju formal agar tampil selalu profesional.',
-    features: ['✓ Setrika uap premium', '✓ Rapi tanpa kusut', '✓ Selesai dalam 6 jam'],
-    price: 'Rp 4.000', unit: '/kg', highlight: false,
-  },
-  {
-    icon: '✨', name: 'Cuci + Setrika', badge: 'Terbaik', badgeColor: 'bg-teal-100 text-teal-700',
-    desc: 'Paket lengkap cuci bersih dan setrika rapi. Pakaian Anda dikembalikan dalam kondisi sempurna siap pakai!',
-    features: ['✓ Cuci bersih menyeluruh', '✓ Setrika rapi + lipat', '✓ Hemat lebih murah'],
-    price: 'Rp 9.000', unit: '/kg', highlight: true,
-  },
-  {
-    icon: '⚡', name: 'Express Laundry', badge: null,
-    desc: 'Butuh cepat? Layanan express kami siap menyelesaikan cucian Anda hanya dalam 3 jam dengan kualitas terjaga.',
-    features: ['✓ Selesai dalam 3 jam', '✓ Prioritas antrian', '✓ Notifikasi WhatsApp'],
-    price: 'Rp 15.000', unit: '/kg', highlight: false,
-  },
-]
+
 
 function OrderModal({ service, onClose }) {
   if (!service) return null
@@ -52,6 +28,26 @@ function OrderModal({ service, onClose }) {
 
 export default function Jasa() {
   const [modal, setModal] = useState(null)
+  const [services, setServices] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulasi pengambilan data dari API (menggunakan json lokal)
+    const fetchServices = async () => {
+      try {
+        const response = await axios.get('/api/services.json')
+        // Menambahkan sedikit delay agar efek loading terlihat
+        setTimeout(() => {
+          setServices(response.data)
+          setLoading(false)
+        }, 800)
+      } catch (error) {
+        console.error('Error fetching services:', error)
+        setLoading(false)
+      }
+    }
+    fetchServices()
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#f5f9ff]">
@@ -69,52 +65,59 @@ export default function Jasa() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {services.map((s, i) => (
-            <div
-              key={i}
-              className={`relative rounded-3xl p-7 flex flex-col border transition-all hover:-translate-y-1 hover:shadow-xl ${
-                s.highlight
-                  ? 'bg-blue-600 text-white border-blue-500 shadow-xl shadow-blue-200'
-                  : 'bg-white border-blue-50 shadow-sm'
-              }`}
-            >
-              {s.badge && (
-                <span className={`absolute top-5 right-5 text-xs font-bold px-3 py-1 rounded-full ${
-                  s.highlight ? 'bg-white/20 text-white' : s.badgeColor
-                }`}>
-                  {s.badge}
-                </span>
-              )}
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 ${
-                s.highlight ? 'bg-white/20' : 'bg-blue-50'
-              }`}>
-                {s.icon}
-              </div>
-              <h3 className={`font-display text-xl font-bold mb-2 ${s.highlight ? 'text-white' : 'text-slate-900'}`}>{s.name}</h3>
-              <p className={`text-sm leading-relaxed mb-4 flex-1 ${s.highlight ? 'text-blue-100' : 'text-slate-500'}`}>{s.desc}</p>
-              <ul className="space-y-1.5 mb-5">
-                {s.features.map((f, j) => (
-                  <li key={j} className={`text-sm ${s.highlight ? 'text-blue-100' : 'text-slate-500'}`}>{f}</li>
-                ))}
-              </ul>
-              <div className="mb-5">
-                <div className={`text-xs mb-0.5 ${s.highlight ? 'text-blue-200' : 'text-slate-400'}`}>Mulai dari</div>
-                <div className={`font-display text-2xl font-black ${s.highlight ? 'text-white' : 'text-blue-600'}`}>
-                  {s.price}<span className={`text-sm font-normal ${s.highlight ? 'text-blue-200' : 'text-slate-400'}`}>{s.unit}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setModal(s)}
-                className={`py-3 rounded-2xl font-semibold text-sm transition-all cursor-pointer border-none ${
+          {loading ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-20">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 font-medium animate-pulse">Memuat daftar layanan...</p>
+            </div>
+          ) : (
+            services.map((s, i) => (
+              <div
+                key={i}
+                className={`relative rounded-3xl p-7 flex flex-col border transition-all hover:-translate-y-1 hover:shadow-xl ${
                   s.highlight
-                    ? 'bg-white text-blue-600 hover:bg-blue-50'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-xl shadow-blue-200'
+                    : 'bg-white border-blue-50 shadow-sm'
                 }`}
               >
-                Pesan Sekarang
-              </button>
-            </div>
-          ))}
+                {s.badge && (
+                  <span className={`absolute top-5 right-5 text-xs font-bold px-3 py-1 rounded-full ${
+                    s.highlight ? 'bg-white/20 text-white' : s.badgeColor
+                  }`}>
+                    {s.badge}
+                  </span>
+                )}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 ${
+                  s.highlight ? 'bg-white/20' : 'bg-blue-50'
+                }`}>
+                  {s.icon}
+                </div>
+                <h3 className={`font-display text-xl font-bold mb-2 ${s.highlight ? 'text-white' : 'text-slate-900'}`}>{s.name}</h3>
+                <p className={`text-sm leading-relaxed mb-4 flex-1 ${s.highlight ? 'text-blue-100' : 'text-slate-500'}`}>{s.desc}</p>
+                <ul className="space-y-1.5 mb-5">
+                  {s.features.map((f, j) => (
+                    <li key={j} className={`text-sm ${s.highlight ? 'text-blue-100' : 'text-slate-500'}`}>{f}</li>
+                  ))}
+                </ul>
+                <div className="mb-5">
+                  <div className={`text-xs mb-0.5 ${s.highlight ? 'text-blue-200' : 'text-slate-400'}`}>Mulai dari</div>
+                  <div className={`font-display text-2xl font-black ${s.highlight ? 'text-white' : 'text-blue-600'}`}>
+                    {s.price}<span className={`text-sm font-normal ${s.highlight ? 'text-blue-200' : 'text-slate-400'}`}>{s.unit}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setModal(s)}
+                  className={`py-3 rounded-2xl font-semibold text-sm transition-all cursor-pointer border-none ${
+                    s.highlight
+                      ? 'bg-white text-blue-600 hover:bg-blue-50'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  Pesan Sekarang
+                </button>
+              </div>
+            ))
+          )}
         </div>
 
         {/* CTA Banner */}

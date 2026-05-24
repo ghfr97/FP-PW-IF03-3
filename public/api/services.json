@@ -1,0 +1,26 @@
+[
+  {
+    "icon": "👕", "name": "Cuci Pakaian", "badge": "Populer", "badgeColor": "bg-blue-100 text-blue-700",
+    "desc": "Cuci bersih menggunakan mesin front-load dengan detergen premium. Hasil bersih sempurna dan aman untuk semua jenis kain.",
+    "features": ["✓ Detergen premium", "✓ Anti-bau & anti-bakteri", "✓ Selesai dalam 1 hari"],
+    "price": "Rp 6.000", "unit": "/kg", "highlight": false
+  },
+  {
+    "icon": "🔥", "name": "Setrika Pakaian", "badge": null, "badgeColor": "",
+    "desc": "Setrika rapi dengan uap panas, cocok untuk pakaian kerja, seragam, dan baju formal agar tampil selalu profesional.",
+    "features": ["✓ Setrika uap premium", "✓ Rapi tanpa kusut", "✓ Selesai dalam 6 jam"],
+    "price": "Rp 4.000", "unit": "/kg", "highlight": false
+  },
+  {
+    "icon": "✨", "name": "Cuci + Setrika", "badge": "Terbaik", "badgeColor": "bg-teal-100 text-teal-700",
+    "desc": "Paket lengkap cuci bersih dan setrika rapi. Pakaian Anda dikembalikan dalam kondisi sempurna siap pakai!",
+    "features": ["✓ Cuci bersih menyeluruh", "✓ Setrika rapi + lipat", "✓ Hemat lebih murah"],
+    "price": "Rp 9.000", "unit": "/kg", "highlight": true
+  },
+  {
+    "icon": "⚡", "name": "Express Laundry", "badge": null, "badgeColor": "",
+    "desc": "Butuh cepat? Layanan express kami siap menyelesaikan cucian Anda hanya dalam 3 jam dengan kualitas terjaga.",
+    "features": ["✓ Selesai dalam 3 jam", "✓ Prioritas antrian", "✓ Notifikasi WhatsApp"],
+    "price": "Rp 15.000", "unit": "/kg", "highlight": false
+  }
+]

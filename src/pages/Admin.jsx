@@ -1,14 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { Link } from 'react-router-dom'
 import Toast, { showToast } from '../components/Toast.jsx'
 
-const initialOrders = [
-  { id: '#FW-001', customer: 'Ahmad Fauzan', service: 'Cuci + Setrika', weight: '5 kg', total: 'Rp 45.000', date: '2026-03-28', status: 'selesai' },
-  { id: '#FW-002', customer: 'Sari Wulandari', service: 'Express Laundry', weight: '3 kg', total: 'Rp 45.000', date: '2026-03-29', status: 'proses' },
-  { id: '#FW-003', customer: 'Budi Santoso', service: 'Cuci Pakaian', weight: '8 kg', total: 'Rp 48.000', date: '2026-03-30', status: 'antrian' },
-  { id: '#FW-004', customer: 'Dewi Rahayu', service: 'Setrika Pakaian', weight: '4 kg', total: 'Rp 16.000', date: '2026-03-31', status: 'selesai' },
-  { id: '#FW-005', customer: 'Rudi Hermawan', service: 'Cuci + Setrika', weight: '6 kg', total: 'Rp 54.000', date: '2026-04-01', status: 'proses' },
-]
+
 
 const services = [
   { icon: '👕', name: 'Cuci Pakaian', desc: 'Detergen premium, front-load', price: 'Rp 6.000/kg', time: '1 Hari', status: 'Aktif' },
@@ -48,17 +43,27 @@ function StatCard({ icon, label, value, sub, bg, text, accent }) {
 export default function Admin() {
   const [page, setPage] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [orders, setOrders] = useState(initialOrders)
+  const [orders, setOrders] = useState([])
   const [showAddOrder, setShowAddOrder] = useState(false)
   const [filter, setFilter] = useState('semua')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    // Memuat data pesanan menggunakan axios (GET)
+    axios.get('/api/orders.json')
+      .then(response => setOrders(response.data))
+      .catch(err => console.error('Gagal mengambil data pesanan', err))
+  }, [])
 
   const filteredOrders = filter === 'semua' ? orders : orders.filter(o => o.status === filter)
 
-  function addOrder(e) {
+  async function addOrder(e) {
     e.preventDefault()
+    setIsSubmitting(true)
     const f = e.target
     const id = '#FW-' + String(Math.floor(Math.random() * 900) + 100)
-    setOrders(prev => [{
+    
+    const newOrder = {
       id,
       customer: f.customer.value,
       service: f.service.value,
@@ -66,9 +71,20 @@ export default function Admin() {
       total: 'Rp ' + (parseFloat(f.weight.value) * 6000).toLocaleString('id-ID'),
       date: f.date.value,
       status: 'antrian',
-    }, ...prev])
-    setShowAddOrder(false)
-    showToast('✅ Pesanan ' + id + ' berhasil ditambahkan!', 'success')
+    }
+
+    try {
+      // Simulasi HTTP POST request
+      await axios.post('https://jsonplaceholder.typicode.com/posts', newOrder)
+      setOrders(prev => [newOrder, ...prev])
+      setShowAddOrder(false)
+      showToast('✅ Pesanan ' + id + ' berhasil ditambahkan!', 'success')
+    } catch (error) {
+      showToast('❌ Gagal menambahkan pesanan', 'error')
+      console.error(error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const navItems = [
@@ -448,7 +464,9 @@ export default function Admin() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddOrder(false)} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
-                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">Simpan</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-50">
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                </button>
               </div>
             </form>
           </div>

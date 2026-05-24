@@ -1,0 +1,7 @@
+[
+  { "id": "#FW-001", "customer": "Ahmad Fauzan", "service": "Cuci + Setrika", "weight": "5 kg", "total": "Rp 45.000", "date": "2026-03-28", "status": "selesai" },
+  { "id": "#FW-002", "customer": "Sari Wulandari", "service": "Express Laundry", "weight": "3 kg", "total": "Rp 45.000", "date": "2026-03-29", "status": "proses" },
+  { "id": "#FW-003", "customer": "Budi Santoso", "service": "Cuci Pakaian", "weight": "8 kg", "total": "Rp 48.000", "date": "2026-03-30", "status": "antrian" },
+  { "id": "#FW-004", "customer": "Dewi Rahayu", "service": "Setrika Pakaian", "weight": "4 kg", "total": "Rp 16.000", "date": "2026-03-31", "status": "selesai" },
+  { "id": "#FW-005", "customer": "Rudi Hermawan", "service": "Cuci + Setrika", "weight": "6 kg", "total": "Rp 54.000", "date": "2026-04-01", "status": "proses" }
+]
