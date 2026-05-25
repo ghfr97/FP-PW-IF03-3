@@ -3,7 +3,7 @@ import Home from './pages/Home.jsx'
 import Jasa from './pages/Jasa.jsx'
 import Profile from './pages/Profile.jsx'
 import Login from './pages/Login.jsx'
-import Admin from './pages/Admin.jsx'
+import Admin from './pages/admin/index.jsx'
 
 export default function App() {
   return (
