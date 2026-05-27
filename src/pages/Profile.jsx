@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import Toast, { showToast } from '../components/Toast.jsx'
@@ -10,6 +12,15 @@ const orders = [
 ]
 
 export default function Profile() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+    if (!isLoggedIn) {
+      navigate('/login')
+    }
+  }, [navigate])
+
   return (
     <div className="min-h-screen bg-[#f5f9ff]">
       <Navbar />

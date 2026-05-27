@@ -60,6 +60,7 @@ export default function Login() {
     try {
       // Simulasi HTTP POST request untuk login
       await axios.post('https://jsonplaceholder.typicode.com/posts', { email, password })
+      localStorage.setItem('isLoggedIn', 'true')
       showToast('✅ Login berhasil! Selamat datang kembali.', 'success')
       setTimeout(() => navigate('/'), 800)
     } catch (error) {
