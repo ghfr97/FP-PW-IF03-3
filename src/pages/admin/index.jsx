@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { Link } from 'react-router-dom'
 import Toast, { showToast } from '../../components/Toast.jsx'
 import Dashboard from './Dashboard.jsx'
@@ -7,7 +8,7 @@ import Customers from './Customers.jsx'
 import Services from './Services.jsx'
 import Reports from './Reports.jsx'
 import Settings from './Settings.jsx'
-import { initialOrders, initialServices, initialCustomers } from './data.js'
+import { initialServices, initialCustomers } from './data.js'
 
 const navItems = [
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
@@ -23,8 +24,22 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Global state — dioper ke masing-masing halaman
-  const [orders,    setOrders]    = useState(initialOrders)
+  const [orders,    setOrders]    = useState([])
   const [services,  setServices]  = useState(initialServices)
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get('/api/orders.json')
+        setOrders(response.data)
+      } catch (error) {
+        console.error('Gagal mengambil data pesanan:', error)
+      }
+    }
+
+    fetchOrders()
+  }, [])
+
   const [customers, setCustomers] = useState(initialCustomers)
 
   const antrian = orders.filter(o => o.status === 'antrian').length
