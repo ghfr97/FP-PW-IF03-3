@@ -1,9 +1,22 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const status = localStorage.getItem('isLoggedIn') === 'true'
+    setIsLoggedIn(status)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn')
+    setIsLoggedIn(false)
+    navigate('/')
+  }
 
   const links = [
     { to: '/', label: 'Home' },
@@ -38,9 +51,18 @@ export default function Navbar() {
 
       {/* Login btn */}
       <div className="hidden md:flex items-center gap-3">
-        <Link to="/login" className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-all no-underline">
-          Masuk
-        </Link>
+        {isLoggedIn ? (
+          <>
+            <Link to="/profile" className="text-slate-600 font-medium hover:text-blue-600 no-underline transition-colors px-2">Profil</Link>
+            <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-all cursor-pointer">
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-all no-underline">
+            Masuk
+          </Link>
+        )}
       </div>
 
       {/* Hamburger */}
@@ -69,9 +91,15 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-          <Link to="/login" onClick={() => setOpen(false)} className="mt-2 px-4 py-2.5 text-center text-sm font-semibold text-white bg-blue-600 rounded-xl no-underline">
-            Masuk
-          </Link>
+          {isLoggedIn ? (
+            <button onClick={() => { handleLogout(); setOpen(false); }} className="mt-2 px-4 py-2.5 text-center text-sm font-semibold text-red-600 bg-red-50 rounded-xl border-none cursor-pointer">
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" onClick={() => setOpen(false)} className="mt-2 px-4 py-2.5 text-center text-sm font-semibold text-white bg-blue-600 rounded-xl no-underline">
+              Masuk
+            </Link>
+          )}
         </div>
       )}
     </nav>
