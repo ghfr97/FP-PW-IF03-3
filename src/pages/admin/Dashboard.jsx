@@ -13,7 +13,11 @@ function StatCard({ icon, label, value, sub, bg, text, accent }) {
   )
 }
 
-export default function Dashboard({ orders, navigate }) {
+import { useOutletContext, useNavigate } from 'react-router-dom'
+
+export default function Dashboard() {
+  const { orders } = useOutletContext()
+  const navigate = useNavigate()
   return (
     <div className="space-y-6">
       <div>
@@ -31,7 +35,7 @@ export default function Dashboard({ orders, navigate }) {
       <div className="bg-white rounded-3xl p-6 border border-blue-50 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-slate-900">Pesanan Terbaru</h3>
-          <button onClick={() => navigate('orders')} className="text-blue-600 text-sm font-medium hover:underline bg-transparent border-none cursor-pointer">
+          <button onClick={() => navigate('/admin/orders')} className="text-blue-600 text-sm font-medium hover:underline bg-transparent border-none cursor-pointer">
             Lihat Semua →
           </button>
         </div>

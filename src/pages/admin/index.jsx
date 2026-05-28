@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Link } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import Toast, { showToast } from '../../components/Toast.jsx'
-import Dashboard from './Dashboard.jsx'
-import Orders from './Orders.jsx'
-import Customers from './Customers.jsx'
-import Services from './Services.jsx'
-import Reports from './Reports.jsx'
-import Settings from './Settings.jsx'
 import { initialServices, initialCustomers } from './data.js'
 
 const navItems = [
@@ -20,7 +14,7 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const [page, setPage] = useState('dashboard')
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Global state — dioper ke masing-masing halaman
@@ -44,12 +38,7 @@ export default function AdminLayout() {
 
   const antrian = orders.filter(o => o.status === 'antrian').length
 
-  function navigate(id) {
-    setPage(id)
-    setSidebarOpen(false)
-  }
-
-  const pageProps = { orders, setOrders, services, setServices, customers, setCustomers, navigate }
+  const pageProps = { orders, setOrders, services, setServices, customers, setCustomers }
 
   return (
     <div className="flex min-h-screen bg-[#f5f9ff]">
@@ -74,25 +63,32 @@ export default function AdminLayout() {
 
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider px-3 mb-2">Menu Utama</p>
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => navigate(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-1 cursor-pointer border-none text-left ${
-                page === item.id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-700 bg-transparent'
-              }`}
-            >
-              <span>{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
-              {item.id === 'orders' && antrian > 0 && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${page === item.id ? 'bg-white/30 text-white' : 'bg-orange-100 text-orange-600'}`}>
-                  {antrian}
-                </span>
-              )}
-            </button>
-          ))}
+          {navItems.map(item => {
+            const isActive = item.id === 'dashboard' 
+              ? location.pathname === '/admin' || location.pathname === '/admin/'
+              : location.pathname.includes(`/admin/${item.id}`)
+
+            return (
+              <Link
+                key={item.id}
+                to={item.id === 'dashboard' ? '/admin' : `/admin/${item.id}`}
+                onClick={() => setSidebarOpen(false)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-1 cursor-pointer border-none text-left no-underline ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                    : 'text-slate-500 hover:bg-blue-50 hover:text-blue-700 bg-transparent'
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.id === 'orders' && antrian > 0 && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${isActive ? 'bg-white/30 text-white' : 'bg-orange-100 text-orange-600'}`}>
+                    {antrian}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
 
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider px-3 mb-2 mt-5">Sistem</p>
           <Link
@@ -122,7 +118,7 @@ export default function AdminLayout() {
             className="lg:hidden text-slate-500 hover:text-blue-600 bg-transparent border-none cursor-pointer text-xl p-1"
           >☰</button>
           <h1 className="font-display font-black text-slate-900 text-lg flex-1">
-            {navItems.find(n => n.id === page)?.label ?? 'Dashboard'}
+            {navItems.find(n => (n.id === 'dashboard' && (location.pathname === '/admin' || location.pathname === '/admin/')) || (n.id !== 'dashboard' && location.pathname.includes(`/admin/${n.id}`)))?.label ?? 'Dashboard'}
           </h1>
           <div className="hidden md:flex items-center gap-2 bg-blue-50 rounded-2xl px-4 py-2 flex-1 max-w-xs border border-blue-100">
             <span className="text-slate-400 text-sm">🔍</span>
@@ -138,12 +134,7 @@ export default function AdminLayout() {
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
-          {page === 'dashboard' && <Dashboard {...pageProps} />}
-          {page === 'orders'    && <Orders    {...pageProps} />}
-          {page === 'customers' && <Customers {...pageProps} />}
-          {page === 'services'  && <Services  {...pageProps} />}
-          {page === 'reports'   && <Reports   {...pageProps} />}
-          {page === 'settings'  && <Settings  {...pageProps} />}
+          <Outlet context={pageProps} />
         </main>
       </div>
     </div>

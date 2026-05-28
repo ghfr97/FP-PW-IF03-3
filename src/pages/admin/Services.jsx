@@ -145,7 +145,10 @@ function ModalTambah({ onClose, onSave }) {
 }
 
 // ── Halaman Layanan ───────────────────────────────────────────────
-export default function Services({ services, setServices }) {
+import { useOutletContext } from 'react-router-dom'
+
+export default function Services() {
+  const { services, setServices } = useOutletContext()
   const [editTarget, setEditTarget] = useState(null)
   const [showTambah, setShowTambah] = useState(false)
 
