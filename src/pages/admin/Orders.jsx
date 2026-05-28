@@ -121,7 +121,10 @@ function Field({ label, name, type, placeholder }) {
 }
 
 // ── Halaman Pesanan ───────────────────────────────────────────────
-export default function Orders({ orders, setOrders }) {
+import { useOutletContext } from 'react-router-dom'
+
+export default function Orders() {
+  const { orders, setOrders } = useOutletContext()
   const [filter,      setFilter]      = useState('semua')
   const [showTambah,  setShowTambah]  = useState(false)
   const [editTarget,  setEditTarget]  = useState(null)   // order yg sedang diedit
