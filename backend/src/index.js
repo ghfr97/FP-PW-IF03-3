@@ -46,6 +46,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Import Routes
+const authRoutes = require('./routes/authRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
+// Mount Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
 // ==========================================
 // START SERVER
 // ==========================================
