@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import api from '../lib/axios'
+import useAuthStore from '../store/useAuthStore'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import Toast, { showToast } from '../components/Toast.jsx'
@@ -7,20 +9,71 @@ import Toast, { showToast } from '../components/Toast.jsx'
 
 
 function OrderModal({ service, onClose }) {
+  const { user } = useAuthStore()
+  const [qty, setQty] = useState(1)
+  const [notes, setNotes] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+
   if (!service) return null
+
+  const handleCheckout = async () => {
+    if (!user) {
+      showToast('Silakan login terlebih dahulu untuk memesan', 'error')
+      return
+    }
+    
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        items: [{ service_id: service.id, qty: Number(qty) }],
+        notes
+      }
+      await api.post('/orders', payload)
+      setIsSuccess(true)
+    } catch (error) {
+      showToast('Gagal membuat pesanan', 'error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg bg-transparent border-none cursor-pointer">✕</button>
-        <div className="text-5xl mb-4">🎉</div>
-        <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">Pesanan Dikirim!</h3>
-        <p className="text-slate-500 text-sm mb-4">Pesanan <strong>{service.name}</strong> ({service.price}{service.unit}) berhasil dikirim.</p>
-        <div className="bg-blue-50 rounded-2xl p-4 mb-4 text-left text-sm text-slate-600">
-          <p>Tim kami akan segera menghubungi Anda via WhatsApp untuk konfirmasi jadwal antar-jemput.</p>
-        </div>
-        <button onClick={onClose} className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">
-          Oke, Siap!
-        </button>
+        
+        {isSuccess ? (
+          <>
+            <div className="text-5xl mb-4">🎉</div>
+            <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">Pesanan Dikirim!</h3>
+            <p className="text-slate-500 text-sm mb-4">Pesanan <strong>{service.name}</strong> ({service.price}{service.unit}) berhasil dikirim.</p>
+            <div className="bg-blue-50 rounded-2xl p-4 mb-4 text-left text-sm text-slate-600">
+              <p>Tim kami akan segera menghubungi Anda via WhatsApp untuk konfirmasi jadwal antar-jemput.</p>
+            </div>
+            <button onClick={onClose} className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">
+              Oke, Siap!
+            </button>
+          </>
+        ) : (
+          <>
+            <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">Buat Pesanan</h3>
+            <p className="text-slate-500 text-sm mb-4">Layanan: <strong>{service.name}</strong></p>
+            <div className="flex flex-col gap-3 text-left mb-6">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Jumlah ({service.unit.replace('/','')})</label>
+                <input type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} className="w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Catatan (Opsional)</label>
+                <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Contoh: Tolong jangan dicampur" className="w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-400"></textarea>
+              </div>
+            </div>
+            <button onClick={handleCheckout} disabled={isSubmitting} className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-60">
+              {isSubmitting ? 'Memproses...' : 'Checkout Pesanan'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -28,26 +81,28 @@ function OrderModal({ service, onClose }) {
 
 export default function Jasa() {
   const [modal, setModal] = useState(null)
-  const [services, setServices] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Simulasi pengambilan data dari API (menggunakan json lokal)
-    const fetchServices = async () => {
-      try {
-        const response = await axios.get('/api/services.json')
-        // Menambahkan sedikit delay agar efek loading terlihat
-        setTimeout(() => {
-          setServices(response.data)
-          setLoading(false)
-        }, 800)
-      } catch (error) {
-        console.error('Error fetching services:', error)
-        setLoading(false)
-      }
+  const { data: services, isLoading: loading, isError } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const response = await api.get('/services')
+      return response.data.map(s => ({
+        id: s.id,
+        name: s.name,
+        desc: s.description,
+        price: s.price,
+        unit: s.unit,
+        icon: '🧺',
+        features: s.description ? s.description.split(',').map(f => f.trim()) : [],
+        highlight: s.name === 'Cuci + Setrika',
+        badge: s.name === 'Express Laundry' ? 'KILAT' : null,
+        badgeColor: 'bg-red-100 text-red-600'
+      }))
     }
-    fetchServices()
-  }, [])
+  })
+
+  if (isError) {
+    showToast('Gagal memuat layanan', 'error')
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f9ff]">

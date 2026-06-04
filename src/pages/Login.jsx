@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import useAuthStore from '../store/useAuthStore'
+import api from '../lib/axios'
 import Toast, { showToast } from '../components/Toast.jsx'
 
 function InputField({ label, id, type = 'text', placeholder, icon, error, showToggle, onToggle }) {
@@ -49,6 +50,8 @@ export default function Login() {
     return e
   }
 
+  const login = useAuthStore((state) => state.login)
+
   async function handleLogin() {
     const email = document.getElementById('login-email').value.trim()
     const password = document.getElementById('login-password').value
@@ -58,13 +61,11 @@ export default function Login() {
     setLoading(true)
 
     try {
-      // Simulasi HTTP POST request untuk login
-      await axios.post('https://jsonplaceholder.typicode.com/posts', { email, password })
-      localStorage.setItem('isLoggedIn', 'true')
+      await login(email, password)
       showToast('✅ Login berhasil! Selamat datang kembali.', 'success')
       setTimeout(() => navigate('/'), 800)
     } catch (error) {
-      showToast('❌ Gagal login. Periksa koneksi Anda.', 'error')
+      showToast(error.response?.data?.message || '❌ Gagal login. Periksa koneksi Anda.', 'error')
       console.error(error)
     } finally {
       setLoading(false)
@@ -73,6 +74,7 @@ export default function Login() {
 
   async function handleRegister() {
     const fname = document.getElementById('reg-fname').value.trim()
+    const lname = document.getElementById('reg-lname').value.trim()
     const email = document.getElementById('reg-email').value.trim()
     const phone = document.getElementById('reg-phone').value.trim()
     const regPw = document.getElementById('reg-password').value
@@ -83,12 +85,12 @@ export default function Login() {
     setLoading(true)
 
     try {
-      // Simulasi HTTP POST request untuk pendaftaran
-      await axios.post('https://jsonplaceholder.typicode.com/posts', { fname, email, phone, regPw })
+      const name = lname ? `${fname} ${lname}` : fname
+      await api.post('/auth/register', { name, email, phone, password: regPw })
       showToast('🎉 Akun berhasil dibuat! Silakan masuk.', 'success')
       setTimeout(() => setTab('login'), 800)
     } catch (error) {
-      showToast('❌ Pendaftaran gagal. Coba lagi nanti.', 'error')
+      showToast(error.response?.data?.message || '❌ Pendaftaran gagal. Coba lagi nanti.', 'error')
       console.error(error)
     } finally {
       setLoading(false)
