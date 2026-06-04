@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import useAuthStore from './store/useAuthStore'
 import Home from './pages/Home.jsx'
 import Jasa from './pages/Jasa.jsx'
 import Profile from './pages/Profile.jsx'
@@ -12,6 +14,17 @@ import Reports from './pages/admin/Reports.jsx'
 import Settings from './pages/admin/Settings.jsx'
 
 export default function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth)
+  const isLoading = useAuthStore((state) => state.isLoading)
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
