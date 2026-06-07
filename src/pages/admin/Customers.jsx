@@ -78,10 +78,9 @@ function Field({ label, name, type, placeholder }) {
 }
 
 // ── Halaman Pelanggan ─────────────────────────────────────────────
-import { useOutletContext } from 'react-router-dom'
 
 export default function Customers() {
-  const { customers, setCustomers } = useOutletContext()
+  const [customers, setCustomers] = useState([])
   const [showPelanggan,  setShowPelanggan]  = useState(false)
   const [editTarget, setEditTarget] = useState(null)
 

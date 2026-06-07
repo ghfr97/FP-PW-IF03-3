@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import useAuthStore from '../store/useAuthStore'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import Toast, { showToast } from '../components/Toast.jsx'
@@ -13,13 +14,14 @@ const orders = [
 
 export default function Profile() {
   const navigate = useNavigate()
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const user = useAuthStore(state => state.user)
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       navigate('/login')
     }
-  }, [navigate])
+  }, [isAuthenticated, navigate])
 
   return (
     <div className="min-h-screen bg-[#f5f9ff]">
@@ -39,20 +41,20 @@ export default function Profile() {
           {/* Profile Card */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-50 flex flex-col items-center text-center">
             <div className="relative mb-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-display text-3xl font-black shadow-lg">
-                A
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-display text-3xl font-black shadow-lg uppercase">
+                {user?.name ? user.name[0] : 'U'}
               </div>
               <div className="absolute inset-0 rounded-full border-2 border-blue-200 animate-ping opacity-20 scale-110"></div>
             </div>
-            <h3 className="font-display text-xl font-bold text-slate-900 mb-1">Ahmad Fauzan</h3>
+            <h3 className="font-display text-xl font-bold text-slate-900 mb-1">{user?.name || 'Pelanggan'}</h3>
             <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-700 rounded-full mb-6">Member Premium ⭐</span>
 
             <div className="w-full space-y-3 text-left mb-6">
               {[
-                { icon: '📧', label: 'Email', value: 'ahmad.fauzan@email.com' },
-                { icon: '📱', label: 'Nomor HP', value: '+62 812-3456-7890' },
-                { icon: '📍', label: 'Alamat', value: 'Jl. Melati No. 12, Yogyakarta' },
-                { icon: '📅', label: 'Bergabung', value: 'Januari 2023' },
+                { icon: '📧', label: 'Email', value: user?.email || '-' },
+                { icon: '📱', label: 'Nomor HP', value: user?.phone || '-' },
+                { icon: '📍', label: 'Alamat', value: user?.address || '-' },
+                { icon: '📅', label: 'Bergabung', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
                   <span className="text-lg">{item.icon}</span>

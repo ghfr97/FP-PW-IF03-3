@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../lib/axios'
+import useAuthStore from '../../store/useAuthStore'
 import Toast, { showToast } from '../../components/Toast.jsx'
-import { initialServices, initialCustomers } from './data.js'
 
 const navItems = [
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
@@ -15,30 +16,34 @@ const navItems = [
 
 export default function AdminLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Global state — dioper ke masing-masing halaman
-  const [orders,    setOrders]    = useState([])
-  const [services,  setServices]  = useState(initialServices)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const user = useAuthStore(state => state.user)
+  const logout = useAuthStore(state => state.logout)
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get('/api/orders.json')
-        setOrders(response.data)
-      } catch (error) {
-        console.error('Gagal mengambil data pesanan:', error)
-      }
+    if (!isAuthenticated || user?.role !== 'ADMIN') {
+      navigate('/login')
     }
+  }, [isAuthenticated, user, navigate])
 
-    fetchOrders()
-  }, [])
+  const { data: orders = [] } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
+      const response = await api.get('/orders/all')
+      return response.data
+    },
+    enabled: isAuthenticated && user?.role === 'ADMIN'
+  })
 
-  const [customers, setCustomers] = useState(initialCustomers)
+  const antrian = orders.filter(o => o.status === 'MENUNGGU_PICKUP').length
 
-  const antrian = orders.filter(o => o.status === 'antrian').length
-
-  const pageProps = { orders, setOrders, services, setServices, customers, setCustomers }
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div className="flex min-h-screen bg-[#f5f9ff]">
@@ -91,20 +96,20 @@ export default function AdminLayout() {
           })}
 
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider px-3 mb-2 mt-5">Sistem</p>
-          <Link
-            to="/login"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 no-underline transition-all"
+          <button
+            onClick={handleLogout}
+            className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 border-none bg-transparent cursor-pointer transition-all"
           >
             🚪 <span>Keluar</span>
-          </Link>
+          </button>
         </nav>
 
         <div className="px-3 py-4 border-t border-blue-100">
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-blue-50">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-bold text-sm">A</div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-bold text-sm uppercase">{user?.name ? user.name[0] : 'A'}</div>
             <div className="flex-1 min-w-0">
-              <div className="text-slate-800 text-xs font-semibold truncate">Admin Utama</div>
-              <div className="text-slate-400 text-xs truncate">admin@snowwash.id</div>
+              <div className="text-slate-800 text-xs font-semibold truncate">{user?.name || 'Admin'}</div>
+              <div className="text-slate-400 text-xs truncate">{user?.email || 'admin@snowwash.id'}</div>
             </div>
           </div>
         </div>
@@ -134,7 +139,7 @@ export default function AdminLayout() {
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
-          <Outlet context={pageProps} />
+          <Outlet />
         </main>
       </div>
     </div>

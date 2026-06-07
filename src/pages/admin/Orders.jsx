@@ -1,6 +1,13 @@
 import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
-import { serviceOptions, statusMap } from './data.js'
+
+const statusMap = {
+  SELESAI: 'bg-emerald-100 text-emerald-700',
+  DICUCI:  'bg-amber-100 text-amber-700',
+  MENUNGGU_PICKUP: 'bg-slate-100 text-slate-500',
+}
 
 // ── Modal tambah pesanan ──────────────────────────────────────────
 function ModalTambah({ onClose, onSave }) {
@@ -32,12 +39,8 @@ function ModalTambah({ onClose, onSave }) {
 }
 
 // ── Modal edit pesanan ────────────────────────────────────────────
-function ModalEdit({ order, onClose, onSave }) {
+function ModalEdit({ order, onClose, onSave, isPending }) {
   const [form, setForm] = useState({
-    customer: order.customer,
-    service:  order.service,
-    weight:   order.weight.replace(' kg', ''),
-    date:     order.date,
     status:   order.status,
   })
 
@@ -53,47 +56,25 @@ function ModalEdit({ order, onClose, onSave }) {
         <p className="text-blue-500 text-xs font-mono font-bold mb-5">{order.id}</p>
 
         <div className="space-y-4">
-          {/* Pelanggan */}
-          <div>
-            <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Nama Pelanggan</label>
-            <input value={form.customer} onChange={e => set('customer', e.target.value)}
-              className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
-          </div>
-          {/* Layanan */}
-          <div>
-            <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Layanan</label>
-            <select value={form.service} onChange={e => set('service', e.target.value)}
-              className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all">
-              {serviceOptions.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          {/* Berat & Tanggal */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Berat (kg)</label>
-              <input type="number" value={form.weight} onChange={e => set('weight', e.target.value)}
-                className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
-            </div>
-            <div>
-              <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Tanggal</label>
-              <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
-            </div>
+          <div className="text-sm text-slate-600 space-y-2 mb-4 bg-slate-50 p-4 rounded-xl">
+            <p><strong>Pelanggan:</strong> {order.user?.name || 'Unknown'}</p>
+            <p><strong>Layanan:</strong> {order.items?.[0]?.service?.name || '-'}</p>
+            <p><strong>Total:</strong> Rp {(order.total_amount || 0).toLocaleString('id-ID')}</p>
           </div>
           {/* Status pills */}
           <div>
             <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Status</label>
             <div className="flex gap-2">
-              {['antrian', 'proses', 'selesai'].map(s => (
+              {['MENUNGGU_PICKUP', 'DICUCI', 'SELESAI'].map(s => (
                 <button key={s} type="button" onClick={() => set('status', s)}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all cursor-pointer border ${
                     form.status === s
-                      ? s === 'selesai' ? 'bg-emerald-500 text-white border-emerald-500'
-                        : s === 'proses' ? 'bg-amber-400 text-white border-amber-400'
+                      ? s === 'SELESAI' ? 'bg-emerald-500 text-white border-emerald-500'
+                        : s === 'DICUCI' ? 'bg-amber-400 text-white border-amber-400'
                         : 'bg-slate-500 text-white border-slate-500'
                       : 'bg-white text-slate-500 border-slate-200 hover:border-blue-200 hover:bg-blue-50'
                   }`}>
-                  {s === 'antrian' ? '⏳' : s === 'proses' ? '🔄' : '✅'} {s}
+                  {s === 'MENUNGGU_PICKUP' ? '⏳' : s === 'DICUCI' ? '🔄' : '✅'} {s.toLowerCase().replace('_', ' ')}
                 </button>
               ))}
             </div>
@@ -101,8 +82,8 @@ function ModalEdit({ order, onClose, onSave }) {
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
-          <button onClick={() => onSave(form)} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">Simpan Perubahan</button>
+          <button onClick={onClose} disabled={isPending} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
+          <button onClick={() => onSave(form)} disabled={isPending} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">{isPending ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
         </div>
       </div>
     </div>
@@ -120,67 +101,67 @@ function Field({ label, name, type, placeholder }) {
   )
 }
 
-// ── Halaman Pesanan ───────────────────────────────────────────────
-import { useOutletContext } from 'react-router-dom'
-
 export default function Orders() {
-  const { orders, setOrders } = useOutletContext()
-  const [filter,      setFilter]      = useState('semua')
+  const queryClient = useQueryClient()
+  const [filter,      setFilter]      = useState('SEMUA')
   const [showTambah,  setShowTambah]  = useState(false)
   const [editTarget,  setEditTarget]  = useState(null)   // order yg sedang diedit
 
-  const filtered = filter === 'semua' ? orders : orders.filter(o => o.status === filter)
+  const { data: orders = [] } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
+      const response = await api.get('/orders/all')
+      return response.data
+    }
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      const response = await api.put(`/orders/${id}/status`, { status })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      showToast('✅ Status pesanan berhasil diperbarui!', 'success')
+      setEditTarget(null)
+    },
+    onError: () => {
+      showToast('❌ Gagal memperbarui status.', 'error')
+    }
+  })
+
+  const filtered = filter === 'SEMUA' ? orders : orders.filter(o => o.status === filter)
 
   function handleTambah(e) {
     e.preventDefault()
-    const f = e.target
-    const id = '#FW-' + String(Math.floor(Math.random() * 900) + 100)
-    const weight = parseFloat(f.weight.value)
-    setOrders(prev => [{
-      id,
-      customer: f.customer.value,
-      service:  f.service.value,
-      weight:   weight + ' kg',
-      total:    'Rp ' + (weight * 6000).toLocaleString('id-ID'),
-      date:     f.date.value,
-      status:   'antrian',
-    }, ...prev])
+    showToast('⚠️ Fitur tambah pesanan manual belum didukung backend.', 'error')
     setShowTambah(false)
-    showToast('✅ Pesanan ' + id + ' berhasil ditambahkan!', 'success')
   }
 
   function handleEdit(form) {
-    const weight = parseFloat(form.weight)
-    setOrders(prev => prev.map(o =>
-      o.id === editTarget.id
-        ? { ...o, customer: form.customer, service: form.service, weight: weight + ' kg', total: 'Rp ' + (weight * 6000).toLocaleString('id-ID'), date: form.date, status: form.status }
-        : o
-    ))
-    setEditTarget(null)
-    showToast('✏️ Pesanan ' + editTarget.id + ' berhasil diperbarui!', 'success')
+    updateStatusMutation.mutate({ id: editTarget.id, status: form.status })
   }
 
   function handleHapus(id) {
-    setOrders(prev => prev.filter(o => o.id !== id))
-    showToast('🗑️ Pesanan ' + id + ' dihapus.')
+    showToast('⚠️ Fitur hapus pesanan belum didukung backend.', 'error')
   }
 
   return (
     <div className="space-y-5">
       {showTambah && <ModalTambah onClose={() => setShowTambah(false)} onSave={handleTambah} />}
-      {editTarget  && <ModalEdit  order={editTarget} onClose={() => setEditTarget(null)} onSave={handleEdit} />}
+      {editTarget  && <ModalEdit  order={editTarget} onClose={() => setEditTarget(null)} onSave={handleEdit} isPending={updateStatusMutation.isPending} />}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2 flex-wrap">
-          {['semua', 'antrian', 'proses', 'selesai'].map(f => (
+          {['SEMUA', 'MENUNGGU_PICKUP', 'DICUCI', 'SELESAI'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all cursor-pointer border ${
                 filter === f
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                   : 'bg-white text-slate-500 border-blue-100 hover:bg-blue-50 hover:text-blue-700'
               }`}>
-              {f}
+              {f.toLowerCase().replace('_', ' ')}
             </button>
           ))}
         </div>
@@ -206,15 +187,15 @@ export default function Orders() {
                 <tr><td colSpan={8} className="text-center text-slate-400 py-10 text-sm">Tidak ada pesanan.</td></tr>
               )}
               {filtered.map((o, i) => (
-                <tr key={i} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
-                  <td className="px-4 py-3.5 text-blue-600 font-mono text-xs font-bold">{o.id}</td>
-                  <td className="px-4 py-3.5 text-slate-800 font-medium">{o.customer}</td>
-                  <td className="px-4 py-3.5 text-slate-500">{o.service}</td>
-                  <td className="px-4 py-3.5 text-slate-500">{o.weight}</td>
-                  <td className="px-4 py-3.5 text-slate-800 font-semibold">{o.total}</td>
-                  <td className="px-4 py-3.5 text-slate-400">{o.date}</td>
+                <tr key={o.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
+                  <td className="px-4 py-3.5 text-blue-600 font-mono text-xs font-bold truncate max-w-[80px]">{o.id}</td>
+                  <td className="px-4 py-3.5 text-slate-800 font-medium truncate max-w-[120px]">{o.user?.name || 'Unknown'}</td>
+                  <td className="px-4 py-3.5 text-slate-500 truncate max-w-[150px]">{o.items?.[0]?.service?.name || '-'}</td>
+                  <td className="px-4 py-3.5 text-slate-500">{o.items?.length > 0 ? o.items.reduce((acc, item) => acc + item.quantity, 0) + ' item' : '-'}</td>
+                  <td className="px-4 py-3.5 text-slate-800 font-semibold">Rp {(o.total_amount || 0).toLocaleString('id-ID')}</td>
+                  <td className="px-4 py-3.5 text-slate-400">{new Date(o.order_date).toLocaleDateString('id-ID')}</td>
                   <td className="px-4 py-3.5">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusMap[o.status]}`}>{o.status}</span>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusMap[o.status] || 'bg-slate-100 text-slate-500'}`}>{o.status.toLowerCase().replace('_', ' ')}</span>
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex gap-2">
