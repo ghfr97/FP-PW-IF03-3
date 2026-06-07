@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
-
-
 // ── Modal tambah Pelanggan ──────────────────────────────────────────
 function ModalPelanggan({ onClose, onSave }) {
   return (
@@ -80,58 +80,43 @@ function Field({ label, name, type, placeholder }) {
 // ── Halaman Pelanggan ─────────────────────────────────────────────
 
 export default function Customers() {
-  const [customers, setCustomers] = useState([])
   const [showPelanggan,  setShowPelanggan]  = useState(false)
   const [editTarget, setEditTarget] = useState(null)
 
+  const { data: rawCustomers = [] } = useQuery({
+    queryKey: ['admin-customers'],
+    queryFn: async () => {
+      const response = await api.get('/users/customers')
+      return response.data
+    }
+  })
+
+  const customers = rawCustomers.map(c => {
+    const init = c.name ? c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : 'U'
+    const ordersCount = c.orders ? c.orders.length : 0
+    const totalAmount = c.orders ? c.orders.reduce((acc, o) => acc + (o.total_amount || 0), 0) : 0
+    return {
+      ...c,
+      init,
+      color: "bg-blue-100 text-blue-600",
+      ordersCount,
+      totalFormatted: "Rp " + totalAmount.toLocaleString('id-ID')
+    }
+  })
+
   function handlePelanggan(e) {
-  e.preventDefault()
-
-  const f = e.target
-
-  const initials = f.customer.value
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-
-  const newCustomer = {
-    id: Date.now(),
-    name: f.customer.value,
-    email: f.email.value,
-    phone: f.phone.value,
-    address: f.address.value,
-    init: initials,
-    color: "bg-blue-100 text-blue-600",
-    orders: 0,
-    total: "Rp0"
+    e.preventDefault()
+    showToast('⚠️ Fitur tambah pelanggan belum didukung backend.', 'error')
+    setShowPelanggan(false)
   }
-
-  setCustomers(prev => [newCustomer, ...prev])
-
-  setShowPelanggan(false)
-
-  showToast(
-    `✅ Pelanggan ${newCustomer.name} berhasil ditambahkan!`,
-    "success"
-  )
-}
 
   function handleSave(form) {
-    const initials = form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    setCustomers(prev => prev.map(c =>
-      c.id === editTarget.id ? { ...c, ...form, init: initials } : c
-    ))
+    showToast('⚠️ Fitur edit pelanggan belum didukung backend.', 'error')
     setEditTarget(null)
-    showToast('✏️ Data pelanggan berhasil diperbarui!', 'success')
   }
 
-  
-
   function handleHapus(id, name) {
-    setCustomers(prev => prev.filter(c => c.id !== id))
-    showToast('🗑️ Pelanggan ' + name + ' dihapus.')
+    showToast('⚠️ Fitur hapus pelanggan belum didukung backend.', 'error')
   }
 
   return (
@@ -165,19 +150,22 @@ export default function Customers() {
                   className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all cursor-pointer border border-red-100 text-xs">🗑️</button>
               </div>
             </div>
-            <div className="text-slate-400 text-xs mb-4 truncate">📍 {c.address}</div>
+            <div className="text-slate-400 text-xs mb-4 truncate">📍 {c.address || 'Belum diatur'}</div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
-                <div className="text-slate-900 font-bold">{c.orders}</div>
+                <div className="text-slate-900 font-bold">{c.ordersCount}</div>
                 <div className="text-slate-400 text-xs">Pesanan</div>
               </div>
               <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
-                <div className="text-slate-900 font-bold">{c.total}</div>
+                <div className="text-slate-900 font-bold">{c.totalFormatted}</div>
                 <div className="text-slate-400 text-xs">Total</div>
               </div>
             </div>
           </div>
         ))}
+        {customers.length === 0 && (
+          <div className="col-span-full text-center text-slate-500 py-10">Belum ada pelanggan terdaftar.</div>
+        )}
       </div>
     </div>
   )
