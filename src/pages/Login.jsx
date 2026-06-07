@@ -37,6 +37,9 @@ export default function Login() {
   const [tab, setTab] = useState('login')
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [showLoginPw, setShowLoginPw] = useState(false)
+  const [showRegPw, setShowRegPw] = useState(false)
+  const [showRegConfirm, setShowRegConfirm] = useState(false)
   const navigate = useNavigate()
 
   function validate(fields) {
@@ -61,9 +64,13 @@ export default function Login() {
     setLoading(true)
 
     try {
-      await login(email, password)
+      const data = await login(email, password)
       showToast('✅ Login berhasil! Selamat datang kembali.', 'success')
-      setTimeout(() => navigate('/'), 800)
+      if (data?.user?.role === 'ADMIN') {
+        setTimeout(() => navigate('/admin'), 800)
+      } else {
+        setTimeout(() => navigate('/'), 800)
+      }
     } catch (error) {
       showToast(error.response?.data?.message || '❌ Gagal login. Periksa koneksi Anda.', 'error')
       console.error(error)
@@ -143,7 +150,7 @@ export default function Login() {
                 <p className="text-slate-500 text-sm mt-1">Masuk ke akun SnowWash kamu</p>
               </div>
               <InputField label="Email" id="login-email" type="email" placeholder="nama@email.com" icon="✉️" error={errors.email} />
-              <InputField label="Password" id="login-password" type="password" placeholder="Masukkan password" icon="🔒" error={errors.password} showToggle />
+              <InputField label="Password" id="login-password" type={showLoginPw ? 'text' : 'password'} placeholder="Masukkan password" icon="🔒" error={errors.password} showToggle onToggle={() => setShowLoginPw(!showLoginPw)} />
               <div className="flex justify-between items-center text-sm">
                 <label className="flex items-center gap-2 cursor-pointer text-slate-600">
                   <input type="checkbox" className="rounded" /> Ingat saya
@@ -187,8 +194,8 @@ export default function Login() {
                 <InputField label="Nomor HP" id="reg-phone" type="tel" placeholder="08xxxxxxxxxx" icon="📱" error={errors.phone} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <InputField label="Password" id="reg-password" type="password" placeholder="Min. 8 karakter" icon="🔒" error={errors.regPw} showToggle />
-                <InputField label="Konfirmasi Password" id="reg-confirm" type="password" placeholder="Ulangi password" icon="🔐" error={errors.regConfirm} showToggle />
+                <InputField label="Password" id="reg-password" type={showRegPw ? 'text' : 'password'} placeholder="Min. 8 karakter" icon="🔒" error={errors.regPw} showToggle onToggle={() => setShowRegPw(!showRegPw)} />
+                <InputField label="Konfirmasi Password" id="reg-confirm" type={showRegConfirm ? 'text' : 'password'} placeholder="Ulangi password" icon="🔐" error={errors.regConfirm} showToggle onToggle={() => setShowRegConfirm(!showRegConfirm)} />
               </div>
               <p className="text-xs text-slate-400">
                 Dengan mendaftar, kamu menyetujui <a href="#" className="text-blue-600">Syarat & Ketentuan</a> dan <a href="#" className="text-blue-600">Kebijakan Privasi</a> SnowWash.

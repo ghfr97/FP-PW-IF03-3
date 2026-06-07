@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import useAuthStore from '../store/useAuthStore'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const logout = useAuthStore(state => state.logout)
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const status = localStorage.getItem('isLoggedIn') === 'true'
-    setIsLoggedIn(status)
-  }, [])
-
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn')
-    setIsLoggedIn(false)
+    logout()
     navigate('/')
   }
 
@@ -51,7 +47,7 @@ export default function Navbar() {
 
       {/* Login btn */}
       <div className="hidden md:flex items-center gap-3">
-        {isLoggedIn ? (
+        {isAuthenticated ? (
           <>
             <Link to="/profile" className="text-slate-600 font-medium hover:text-blue-600 no-underline transition-colors px-2">Profil</Link>
             <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-all cursor-pointer">
@@ -91,7 +87,7 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <button onClick={() => { handleLogout(); setOpen(false); }} className="mt-2 px-4 py-2.5 text-center text-sm font-semibold text-red-600 bg-red-50 rounded-xl border-none cursor-pointer">
               Logout
             </button>
