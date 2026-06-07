@@ -1,16 +1,101 @@
-# React + Vite
+# ❄️ SnowWash - Sistem Informasi Laundry
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SnowWash adalah aplikasi pengelolaan dan pemesanan layanan laundry modern yang terbagi menjadi dua bagian: antarmuka pelanggan (Pemesanan Layanan, Profil) dan panel administrasi (Dashboard, Manajemen Pesanan, Layanan). 
 
-Currently, two official plugins are available:
+Projek ini dibangun menggunakan teknologi modern: **React (Vite)** untuk Frontend, dan **Node.js + Express + Prisma ORM + MySQL** untuk Backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🛠️ Persyaratan Sistem (Prerequisites)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Sebelum menjalankan projek ini di laptop Anda, pastikan perangkat lunak berikut sudah terinstal:
+1. **Node.js** (Disarankan versi LTS, misal v18 atau v20)
+2. **Git** (Untuk meng-clone repositori)
+3. **MySQL Server** (Bisa didapatkan dengan menginstal **XAMPP**, **Laragon**, atau **MySQL Workbench**)
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Cara Instalasi dan Menjalankan Projek
+
+Ikuti langkah-langkah di bawah ini secara berurutan agar projek berjalan sempurna tanpa *error*.
+
+### 1. Salin (Clone) Projek ke Laptop Anda
+Buka terminal/Command Prompt dan jalankan:
+```bash
+git clone <link-repositori-github-disini>
+cd snowwash
+```
+*(Ganti `<link-repositori-github-disini>` dengan URL asli repositori Github Anda)*
+
+### 2. Konfigurasi Backend & Database (Wajib dilakukan pertama)
+
+Pastikan server MySQL Anda sudah menyala (Start MySQL di XAMPP/Laragon). Buka aplikasi *database manager* seperti phpMyAdmin (biasanya di `http://localhost/phpmyadmin`), lalu **buat sebuah database kosong** bernama: `snowwash_db`.
+
+Selanjutnya, buka terminal baru dan jalankan konfigurasi *backend*:
+```bash
+# 1. Masuk ke folder backend
+cd backend
+
+# 2. Instal semua pustaka (library) yang dibutuhkan
+npm install
+
+# 3. Buat file .env (Konfigurasi Database)
+# Buat file bernama `.env` di dalam folder backend, lalu isi dengan kode di bawah ini:
+# DATABASE_URL="mysql://root:@localhost:3306/snowwash_db"
+# PORT=5001
+# FRONTEND_URL=http://localhost:5173
+
+# 4. Bangun struktur tabel ke MySQL (Otomatis)
+npx prisma db push
+
+# 5. Isi database dengan data bawaan (Akun admin & daftar layanan default)
+npm run seed
+
+# 6. Nyalakan server backend
+npm run dev
+```
+Jika sukses, terminal akan menampilkan: `✅ Server berjalan di http://localhost:5001`. **(Biarkan terminal ini tetap menyala).**
+
+### 3. Konfigurasi Frontend (Tampilan Web)
+
+Buka terminal **baru** (biarkan terminal *backend* tadi tetap jalan), pastikan Anda berada di folder utama projek (`snowwash`), lalu jalankan:
+
+```bash
+# 1. Instal semua pustaka frontend
+npm install
+
+# 2. Nyalakan server frontend
+npm run dev
+```
+Jika sukses, terminal akan memberikan URL lokal (biasanya `http://localhost:5173`). Klik atau buka URL tersebut di *browser* Anda!
+
+---
+
+## 🔑 Akses Akun Bawaan (Default Accounts)
+
+Karena Anda telah menjalankan perintah `npm run seed` di langkah ke-2, *database* otomatis diisi dengan satu akun super admin.
+
+**Akses Admin Panel:**
+- **Email:** `admin@snowwash.com`
+- **Password:** `admin123`
+
+Untuk *login* sebagai pelanggan biasa, Anda cukup melakukan registrasi melalui tombol "Daftar" di halaman *Login*.
+
+---
+
+## 📂 Struktur Projek
+```text
+snowwash/
+├── backend/                # Folder Node.js Backend API
+│   ├── prisma/             # Skema database & file Seed
+│   ├── src/                # Kode sumber backend (Routes, Controllers, Middleware)
+│   └── .env                # File rahasia penghubung database
+├── src/                    # Folder React Frontend
+│   ├── components/         # Komponen UI yang dapat digunakan kembali
+│   ├── pages/              # Halaman utama (Home, Admin, Login, dll)
+│   ├── lib/                # Konfigurasi penghubung API (Axios)
+│   └── store/              # Manajemen State Global (Zustand)
+└── package.json            # Daftar pustaka Frontend
+```
+
+Selamat mengembangkan! 🚀
