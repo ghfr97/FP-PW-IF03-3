@@ -182,7 +182,7 @@ export default function Jasa() {
             <p className="text-blue-100 text-sm">Hubungi kami langsung via WhatsApp, kami siap membantu 24/7!</p>
           </div>
           <a
-            href="https://wa.me/6281234567890"
+            href="https://wa.me/6281548329879"
             target="_blank"
             rel="noreferrer"
             className="flex-shrink-0 px-7 py-3.5 bg-white text-blue-700 font-bold rounded-2xl hover:bg-blue-50 transition-all no-underline shadow-lg"

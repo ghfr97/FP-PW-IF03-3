@@ -52,7 +52,7 @@ exports.me = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.userId },
-            select: { id: true, name: true, email: true, phone: true, role: true }
+            select: { id: true, name: true, email: true, phone: true, address: true, created_at: true, role: true }
         });
         res.json(user);
     } catch (error) {
