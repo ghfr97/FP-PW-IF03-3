@@ -48,7 +48,7 @@ npm install
 npx prisma db push
 
 # 5. Isi database dengan data bawaan (Akun admin & daftar layanan default)
-npm run seed
+npx prisma db seed
 
 # 6. Nyalakan server backend
 npm run dev
