@@ -22,10 +22,9 @@ Ikuti langkah-langkah di bawah ini secara berurutan agar projek berjalan sempurn
 ### 1. Salin (Clone) Projek ke Laptop Anda
 Buka terminal/Command Prompt dan jalankan:
 ```bash
-git clone <link-repositori-github-disini>
+git clone https://github.com/ghfr97/FP-PW-IF03-2.git
 cd snowwash
 ```
-*(Ganti `<link-repositori-github-disini>` dengan URL asli repositori Github Anda)*
 
 ### 2. Konfigurasi Backend & Database (Wajib dilakukan pertama)
 
