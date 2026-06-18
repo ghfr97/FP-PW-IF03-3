@@ -64,3 +64,19 @@ exports.logout = (req, res) => {
     res.clearCookie('token');
     res.json({ message: 'Logout berhasil' });
 };
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, phone, address } = req.body;
+        
+        const updatedUser = await prisma.user.update({
+            where: { id: req.userId },
+            data: { name, phone, address },
+            select: { id: true, name: true, email: true, phone: true, address: true, role: true, created_at: true }
+        });
+        
+        res.json({ message: 'Profil berhasil diperbarui', user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal memperbarui profil', error: error.message });
+    }
+};

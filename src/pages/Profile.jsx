@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '../lib/axios'
@@ -16,6 +16,31 @@ export default function Profile() {
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const user = useAuthStore(state => state.user)
+  const updateUser = useAuthStore(state => state.updateUser)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '' })
+
+  const handleEditClick = () => {
+    setEditForm({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      address: user?.address || ''
+    })
+    setIsEditing(true)
+  }
+
+  const handleSaveProfile = async () => {
+    try {
+      showToast('Menyimpan profil...', 'info')
+      const res = await api.put('/auth/profile', editForm)
+      updateUser(res.data.user)
+      setIsEditing(false)
+      showToast('Profil berhasil diperbarui! 🎉', 'success')
+    } catch (error) {
+      showToast('Gagal memperbarui profil', 'error')
+    }
+  }
 
   // Fetch orders
   const { data: orders = [], isLoading } = useQuery({
@@ -81,29 +106,78 @@ export default function Profile() {
             <h3 className="font-display text-xl font-bold text-slate-900 mb-1">{user?.name || 'Pelanggan'}</h3>
             <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-700 rounded-full mb-6">Member Premium ⭐</span>
 
-            <div className="w-full space-y-3 text-left mb-6">
-              {[
-                { icon: '📧', label: 'Email', value: user?.email || '-' },
-                { icon: '📱', label: 'Nomor HP', value: user?.phone || '-' },
-                { icon: '📍', label: 'Alamat', value: user?.address || '-' },
-                { icon: '📅', label: 'Bergabung', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                  <span className="text-lg">{item.icon}</span>
+            {isEditing ? (
+              <div className="w-full space-y-3 mb-6 text-left">
+                <input 
+                  type="text" 
+                  value={editForm.name} 
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+                  placeholder="Nama Lengkap"
+                />
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                  <span className="text-lg">📧</span>
                   <div>
-                    <div className="text-xs text-slate-400 font-medium">{item.label}</div>
-                    <div className="text-sm text-slate-700 font-medium">{item.value}</div>
+                    <div className="text-xs text-slate-400 font-medium">Email (Tidak dapat diubah)</div>
+                    <div className="text-sm text-slate-500 font-medium">{user?.email || '-'}</div>
                   </div>
                 </div>
-              ))}
-            </div>
+                <input 
+                  type="text" 
+                  value={editForm.phone} 
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium"
+                  placeholder="Nomor HP"
+                />
+                <textarea 
+                  value={editForm.address} 
+                  onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium resize-none h-24"
+                  placeholder="Alamat Lengkap"
+                ></textarea>
+              </div>
+            ) : (
+              <div className="w-full space-y-3 text-left mb-6">
+                {[
+                  { icon: '📧', label: 'Email', value: user?.email || '-' },
+                  { icon: '📱', label: 'Nomor HP', value: user?.phone || '-' },
+                  { icon: '📍', label: 'Alamat', value: user?.address || '-' },
+                  { icon: '📅', label: 'Bergabung', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                    <span className="text-lg">{item.icon}</span>
+                    <div>
+                      <div className="text-xs text-slate-400 font-medium">{item.label}</div>
+                      <div className="text-sm text-slate-700 font-medium">{item.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            <button
-              onClick={() => showToast('✏️ Fitur edit profil segera hadir!', 'success')}
-              className="w-full py-3 border-2 border-blue-200 text-blue-700 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-transparent"
-            >
-              ✏️ Edit Profil
-            </button>
+            {isEditing ? (
+              <div className="flex gap-2 w-full">
+                <button 
+                  onClick={() => setIsEditing(false)} 
+                  className="flex-1 py-3 text-slate-500 bg-slate-100 font-semibold rounded-2xl cursor-pointer hover:bg-slate-200 transition-all"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={handleSaveProfile} 
+                  className="flex-1 py-3 text-white bg-blue-600 font-semibold rounded-2xl shadow-lg shadow-blue-200 cursor-pointer hover:bg-blue-700 transition-all"
+                >
+                  Simpan
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleEditClick}
+                className="w-full py-3 border-2 border-blue-200 text-blue-700 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-transparent"
+              >
+                ✏️ Edit Profil
+              </button>
+            )}
           </div>
 
           {/* Dashboard Right */}

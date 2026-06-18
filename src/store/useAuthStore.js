@@ -15,6 +15,10 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  updateUser: (newData) => {
+    set((state) => ({ user: { ...state.user, ...newData } }));
+  },
+
   login: async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     set({ user: response.data.user, isAuthenticated: true });
