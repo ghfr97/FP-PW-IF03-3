@@ -42,6 +42,7 @@ model User {
   address       String?   @db.Text
   role          Role      @default(CUSTOMER)
   refresh_token String?   @db.Text
+  avatar_url    String?
   created_at    DateTime  @default(now())
   
   orders        Order[]

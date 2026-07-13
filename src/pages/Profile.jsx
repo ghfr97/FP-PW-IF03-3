@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '../lib/axios'
@@ -20,6 +20,9 @@ export default function Profile() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '' })
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const fileInputRef = useRef(null)
 
   const handleEditClick = () => {
     setEditForm({
@@ -27,16 +30,58 @@ export default function Profile() {
       phone: user?.phone || '',
       address: user?.address || ''
     })
+    setSelectedFile(null)
+    setPreviewUrl(null)
     setIsEditing(true)
+  }
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Ukuran file maksimal 5MB!', 'error')
+        return
+      }
+      setSelectedFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
   }
 
   const handleSaveProfile = async () => {
     try {
       showToast('Menyimpan profil...', 'info')
+      
+      // Upload avatar jika ada yang dipilih
+      let updatedUserObj = null;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('avatar', selectedFile);
+        const avatarRes = await api.post('/users/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        updatedUserObj = avatarRes.data.user;
+      }
+
+      // Update data text profil
       const res = await api.put('/auth/profile', editForm)
-      updateUser(res.data.user)
+      
+      // Update state global (Zustand)
+      if (updatedUserObj) {
+         // Jika avatar diupload, gunakan data terbaru dari avatar API yang mungkin lebih up-to-date
+         // Tapi kita perlu merge dengan data dari profile API jika keduanya diupdate
+         updateUser({ ...res.data.user, avatar_url: updatedUserObj.avatar_url });
+      } else {
+         updateUser(res.data.user)
+      }
+      
       setIsEditing(false)
       showToast('Profil berhasil diperbarui! 🎉', 'success')
+      
+      if (previewUrl) {
+         URL.revokeObjectURL(previewUrl)
+         setPreviewUrl(null)
+         setSelectedFile(null)
+      }
     } catch (error) {
       showToast('Gagal memperbarui profil', 'error')
     }
@@ -97,11 +142,34 @@ export default function Profile() {
 
           {/* Profile Card */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-50 flex flex-col items-center text-center">
-            <div className="relative mb-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-display text-3xl font-black shadow-lg uppercase">
-                {user?.name ? user.name[0] : 'U'}
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileSelect} 
+            />
+
+            <div className="relative mb-4 group">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-display text-3xl font-black shadow-lg uppercase overflow-hidden">
+                {previewUrl || user?.avatar_url ? (
+                  <img src={previewUrl || user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  user?.name ? user.name[0] : 'U'
+                )}
               </div>
-              <div className="absolute inset-0 rounded-full border-2 border-blue-200 animate-ping opacity-20 scale-110"></div>
+              
+              {isEditing && (
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  Ubah Foto
+                </button>
+              )}
+              
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200 animate-ping opacity-20 scale-110 pointer-events-none"></div>
             </div>
             <h3 className="font-display text-xl font-bold text-slate-900 mb-1">{user?.name || 'Pelanggan'}</h3>
             <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-700 rounded-full mb-6">Member Premium ⭐</span>

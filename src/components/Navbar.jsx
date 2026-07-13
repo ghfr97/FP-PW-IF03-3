@@ -5,6 +5,7 @@ import useAuthStore from '../store/useAuthStore'
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const user = useAuthStore(state => state.user)
   const logout = useAuthStore(state => state.logout)
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -49,7 +50,16 @@ export default function Navbar() {
       <div className="hidden md:flex items-center gap-3">
         {isAuthenticated ? (
           <>
-            <Link to="/profile" className="text-slate-600 font-medium hover:text-blue-600 no-underline transition-colors px-2">Profil</Link>
+            <Link to="/profile" className="flex items-center gap-2 no-underline text-slate-700 hover:text-blue-600 font-medium px-2 py-1 rounded-full hover:bg-slate-50 transition-colors">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white text-sm font-bold">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  user?.name ? user.name[0].toUpperCase() : 'U'
+                )}
+              </div>
+              <span className="max-w-[100px] truncate text-sm">{user?.name}</span>
+            </Link>
             <button onClick={handleLogout} className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-all cursor-pointer">
               Logout
             </button>
