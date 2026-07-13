@@ -81,3 +81,32 @@ exports.updateOrderStatus = async (req, res) => {
         res.status(500).json({ message: 'Gagal update status' });
     }
 };
+
+// --- MINGGU 13: VIEW ---
+// Memanggil View UserOrderSummaryView menggunakan raw query
+exports.getUserOrderSummary = async (req, res) => {
+    try {
+        const summary = await prisma.$queryRaw`SELECT * FROM UserOrderSummaryView`;
+        // Prisma mengembalikan BigInt untuk fungsi agregasi (COUNT/SUM) di MySQL, kita konversi agar bisa di-stringify ke JSON
+        const formattedSummary = summary.map(item => ({
+            ...item,
+            total_orders: Number(item.total_orders),
+            total_spent: Number(item.total_spent)
+        }));
+        res.json({ message: 'Berhasil mengambil view', data: formattedSummary });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal memanggil view', error: error.message });
+    }
+};
+
+// --- MINGGU 10: STORED PROCEDURE ---
+// Memanggil Stored Procedure ApplyDiscountToAllOrders
+exports.applyDiscount = async (req, res) => {
+    try {
+        await prisma.$executeRaw`CALL ApplyDiscountToAllOrders()`;
+        res.json({ message: 'Stored Procedure berhasil dieksekusi, diskon telah diterapkan jika memenuhi syarat.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengeksekusi stored procedure', error: error.message });
+    }
+};
+

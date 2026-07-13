@@ -10,4 +10,8 @@ router.get('/me', verifyToken, orderController.getMyOrders);
 router.get('/all', verifyToken, requireAdmin, orderController.getAllOrders);
 router.put('/:id/status', verifyToken, requireAdmin, orderController.updateOrderStatus);
 
+// Rute untuk mengecek fitur Advanced Database
+router.get('/summary', verifyToken, requireAdmin, orderController.getUserOrderSummary);
+router.post('/apply-discount', verifyToken, requireAdmin, orderController.applyDiscount);
+
 module.exports = router;
