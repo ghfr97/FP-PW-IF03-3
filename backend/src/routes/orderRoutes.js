@@ -4,6 +4,7 @@ const orderController = require('../controllers/orderController');
 const { verifyToken, requireAdmin } = require('../middlewares/authMiddleware');
 
 router.post('/', verifyToken, orderController.createOrder);
+router.post('/checkout', verifyToken, orderController.createOrderAndPayment);
 router.get('/me', verifyToken, orderController.getMyOrders);
 
 // Akses Khusus Admin

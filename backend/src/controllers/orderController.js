@@ -1,9 +1,23 @@
 const prisma = require('../utils/prisma');
 const { v4: uuidv4 } = require('uuid');
+const midtransClient = require('midtrans-client');
+
+// Midtrans Core API initialization
+const snap = new midtransClient.Snap({
+    isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+    serverKey: process.env.MIDTRANS_SERVER_KEY,
+    clientKey: process.env.MIDTRANS_CLIENT_KEY
+});
 
 exports.createOrder = async (req, res) => {
+    // This is the old basic create order, kept for backward compatibility if needed, 
+    // but we will mainly use createOrderAndPayment going forward.
+    // ...
+};
+
+exports.createOrderAndPayment = async (req, res) => {
     try {
-        const { items, notes } = req.body; // items = [{ service_id: 1, qty: 2 }]
+        const { items, notes, payment_method } = req.body;
         
         let total_amount = 0;
         const orderItemsData = [];
@@ -23,21 +37,65 @@ exports.createOrder = async (req, res) => {
         
         const order_id = 'ORD-' + uuidv4().substring(0, 8).toUpperCase();
         
-        const order = await prisma.order.create({
-            data: {
-                id: order_id,
-                user_id: req.userId,
-                total_amount,
-                notes,
-                items: {
-                    create: orderItemsData
+        // Menggunakan transaction untuk memastikan atomic (Order, OrderItem, dan Payment dibuat sekaligus)
+        const order = await prisma.$transaction(async (tx) => {
+            const newOrder = await tx.order.create({
+                data: {
+                    id: order_id,
+                    user_id: req.userId,
+                    total_amount,
+                    notes,
+                    items: {
+                        create: orderItemsData
+                    }
+                },
+                include: { items: true, user: true }
+            });
+
+            await tx.payment.create({
+                data: {
+                    order_id: newOrder.id,
+                    amount: total_amount,
+                    payment_method: payment_method || 'TRANSFER',
+                    status: payment_method === 'COD' ? 'PENDING' : 'PENDING'
                 }
-            },
-            include: { items: true }
+            });
+
+            return newOrder;
         });
-        
-        res.status(201).json({ message: 'Pesanan berhasil dibuat', order });
+
+        // Jika metode COD, kita tidak perlu memanggil Midtrans
+        if (payment_method === 'COD') {
+            return res.status(201).json({ message: 'Pesanan COD berhasil dibuat', order });
+        }
+
+        // Jika metode TRANSFER, buat Snap Token dari Midtrans
+        const parameter = {
+            transaction_details: {
+                order_id: order.id,
+                gross_amount: order.total_amount
+            },
+            credit_card: {
+                secure: true
+            },
+            customer_details: {
+                first_name: order.user.name,
+                email: order.user.email,
+                phone: order.user.phone
+            }
+        };
+
+        const transaction = await snap.createTransaction(parameter);
+        const transactionToken = transaction.token;
+
+        res.status(201).json({ 
+            message: 'Pesanan berhasil dibuat, silakan proses pembayaran', 
+            order, 
+            token: transactionToken 
+        });
+
     } catch (error) {
+        console.error("Error createOrderAndPayment:", error);
         res.status(500).json({ message: 'Gagal membuat pesanan', error: error.message });
     }
 };

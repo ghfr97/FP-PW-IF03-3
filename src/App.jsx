@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import useAuthStore from './store/useAuthStore'
 import Home from './pages/Home.jsx'
 import Jasa from './pages/Jasa.jsx'
+import Checkout from './pages/Checkout.jsx'
 import Profile from './pages/Profile.jsx'
 import Login from './pages/Login.jsx'
 import AdminLayout from './pages/admin/index.jsx'
@@ -12,6 +13,7 @@ import Customers from './pages/admin/Customers.jsx'
 import Services from './pages/admin/Services.jsx'
 import Reports from './pages/admin/Reports.jsx'
 import Settings from './pages/admin/Settings.jsx'
+import Toast from './components/Toast.jsx'
 
 export default function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth)
@@ -26,9 +28,12 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <>
+      <Toast />
+      <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/jasa" element={<Jasa />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin" element={<AdminLayout />}>
@@ -40,5 +45,6 @@ export default function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
+    </>
   )
 }

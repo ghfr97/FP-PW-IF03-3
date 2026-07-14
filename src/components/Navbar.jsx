@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/useAuthStore'
+import useCartStore from '../store/useCartStore'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const user = useAuthStore(state => state.user)
   const logout = useAuthStore(state => state.logout)
+  const cartItemsCount = useCartStore(state => state.getTotalItems())
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
@@ -50,6 +52,17 @@ export default function Navbar() {
       <div className="hidden md:flex items-center gap-3">
         {isAuthenticated ? (
           <>
+            <Link to="/checkout" className="relative p-2 text-slate-500 hover:text-blue-600 transition-colors mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {cartItemsCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                  {cartItemsCount}
+                </span>
+              )}
+            </Link>
+            
             <Link to="/profile" className="flex items-center gap-2 no-underline text-slate-700 hover:text-blue-600 font-medium px-2 py-1 rounded-full hover:bg-slate-50 transition-colors">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white text-sm font-bold">
                 {user?.avatar_url ? (
