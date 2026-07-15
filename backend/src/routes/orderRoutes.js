@@ -2,14 +2,16 @@ const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 const { verifyToken, requireAdmin } = require('../middlewares/authMiddleware');
+const validateRequest = require('../middlewares/validateRequest');
+const { createOrderSchema, updateOrderStatusSchema } = require('../utils/validations/orderValidation');
 
-router.post('/', verifyToken, orderController.createOrder);
-router.post('/checkout', verifyToken, orderController.createOrderAndPayment);
+router.post('/', verifyToken, validateRequest(createOrderSchema), orderController.createOrder);
+router.post('/checkout', verifyToken, validateRequest(createOrderSchema), orderController.createOrderAndPayment);
 router.get('/me', verifyToken, orderController.getMyOrders);
 
 // Akses Khusus Admin
 router.get('/all', verifyToken, requireAdmin, orderController.getAllOrders);
-router.put('/:id/status', verifyToken, requireAdmin, orderController.updateOrderStatus);
+router.put('/:id/status', verifyToken, requireAdmin, validateRequest(updateOrderStatusSchema), orderController.updateOrderStatus);
 
 // Rute untuk mengecek fitur Advanced Database
 router.get('/summary', verifyToken, requireAdmin, orderController.getUserOrderSummary);
