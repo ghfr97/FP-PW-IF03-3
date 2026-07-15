@@ -3,12 +3,13 @@ const prisma = require('../utils/prisma');
 
 const verifyToken = async (req, res, next) => {
     try {
-        const token = req.cookies.token;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
         if (!token) {
             return res.status(401).json({ message: 'Tidak ada token, akses ditolak!' });
         }
         
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'rahasia_jwt_123');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_access_key_123');
         req.userId = decoded.id;
         
         const user = await prisma.user.findUnique({ where: { id: req.userId } });

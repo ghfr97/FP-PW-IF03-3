@@ -2,7 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'rahasia_jwt_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_access_key_123';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_key_456';
 
 exports.register = async (req, res) => {
     try {
@@ -33,16 +34,41 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: 'Email atau password salah!' });
         
-        const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1d' });
+        const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
         
-        res.cookie('token', token, {
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { refresh_token: refreshToken }
+        });
+        
+        res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000 // 1 hari
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
         });
         
-        res.json({ message: 'Login berhasil', user: { id: user.id, name: user.name, role: user.role } });
+        res.json({ message: 'Login berhasil', accessToken, user: { id: user.id, name: user.name, role: user.role } });
+    } catch (error) {
+        res.status(500).json({ message: 'Terjadi kesalahan server', error: error.message });
+    }
+};
+
+exports.refreshToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+        if (!refreshToken) return res.status(401).json({ message: 'Refresh token tidak ditemukan!' });
+        
+        const user = await prisma.user.findFirst({ where: { refresh_token: refreshToken } });
+        if (!user) return res.status(403).json({ message: 'Refresh token tidak valid!' });
+        
+        jwt.verify(refreshToken, JWT_REFRESH_SECRET, (err, decoded) => {
+            if (err) return res.status(403).json({ message: 'Refresh token kedaluwarsa atau tidak valid!' });
+            
+            const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
+            res.json({ accessToken });
+        });
     } catch (error) {
         res.status(500).json({ message: 'Terjadi kesalahan server', error: error.message });
     }
@@ -60,9 +86,20 @@ exports.me = async (req, res) => {
     }
 };
 
-exports.logout = (req, res) => {
-    res.clearCookie('token');
-    res.json({ message: 'Logout berhasil' });
+exports.logout = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+        if (refreshToken) {
+            await prisma.user.updateMany({
+                where: { refresh_token: refreshToken },
+                data: { refresh_token: null }
+            });
+        }
+        res.clearCookie('refreshToken');
+        res.json({ message: 'Logout berhasil' });
+    } catch (error) {
+        res.status(500).json({ message: 'Terjadi kesalahan saat logout', error: error.message });
+    }
 };
 
 exports.updateProfile = async (req, res) => {
