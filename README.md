@@ -38,11 +38,22 @@ cd backend
 # 2. Instal semua pustaka (library) yang dibutuhkan
 npm install
 
-# 3. Buat file .env (Konfigurasi Database)
-# Buat file bernama `.env` di dalam folder backend, lalu isi dengan kode di bawah ini:
-# DATABASE_URL="mysql://root:@localhost:3306/snowwash_db"
+# 3. Buat file .env (Konfigurasi Database & Secrets)
+# Buat file bernama `.env` di dalam folder backend, lalu isi dengan format berikut:
 # PORT=5001
 # FRONTEND_URL=http://localhost:5173
+# DATABASE_URL="mysql://root:@localhost:3306/snowwash_db"
+#
+# JWT_SECRET="RAHASIA_JWT_YANG_SANGAT_PANJANG_DAN_AMAN"
+# JWT_REFRESH_SECRET="RAHASIA_REFRESH_JWT_YANG_SANGAT_PANJANG"
+# 
+# CLOUDINARY_CLOUD_NAME="your_cloud_name"
+# CLOUDINARY_API_KEY="your_api_key"
+# CLOUDINARY_API_SECRET="your_api_secret"
+#
+# MIDTRANS_SERVER_KEY="SB-Mid-server-xxx"
+# MIDTRANS_CLIENT_KEY="SB-Mid-client-xxx"
+# MIDTRANS_IS_PRODUCTION="false"
 
 # 4. Bangun struktur tabel ke MySQL (Otomatis)
 npx prisma db push
@@ -63,7 +74,11 @@ Buka terminal **baru** (biarkan terminal *backend* tadi tetap jalan), pastikan A
 # 1. Instal semua pustaka frontend
 npm install
 
-# 2. Nyalakan server frontend
+# 2. Buat file .env di root projek frontend (opsional untuk pembayaran otomatis)
+# Isi file dengan kunci publik Midtrans Anda:
+# VITE_MIDTRANS_CLIENT_KEY="SB-Mid-client-xxx"
+
+# 3. Nyalakan server frontend
 npm run dev
 ```
 Jika sukses, terminal akan memberikan URL lokal (biasanya `http://localhost:5173`). Klik atau buka URL tersebut di *browser* Anda!

@@ -1,3 +1,0 @@
-- [x] Tahap 1: Pembuatan Validasi Zod (`serviceValidation.js`)
-- [x] Tahap 2: Modifikasi Controller (`serviceController.js`)
-- [x] Tahap 3: Menyambungkan Routes (`serviceRoutes.js`)
