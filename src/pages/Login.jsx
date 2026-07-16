@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
 import Toast, { showToast } from '../components/Toast.jsx'
@@ -36,7 +37,6 @@ function InputField({ label, id, type = 'text', placeholder, icon, error, showTo
 export default function Login() {
   const [tab, setTab] = useState('login')
   const [errors, setErrors] = useState({})
-  const [loading, setLoading] = useState(false)
   const [showLoginPw, setShowLoginPw] = useState(false)
   const [showRegPw, setShowRegPw] = useState(false)
   const [showRegConfirm, setShowRegConfirm] = useState(false)
@@ -53,33 +53,52 @@ export default function Login() {
     return e
   }
 
-  const login = useAuthStore((state) => state.login)
+  const loginFn = useAuthStore((state) => state.login)
 
-  async function handleLogin() {
-    const email = document.getElementById('login-email').value.trim()
-    const password = document.getElementById('login-password').value
-    const e = validate({ email, password })
-    setErrors(e)
-    if (Object.keys(e).length) return
-    setLoading(true)
-
-    try {
-      const data = await login(email, password)
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }) => {
+      return await loginFn(email, password)
+    },
+    onSuccess: (data) => {
       showToast('✅ Login berhasil! Selamat datang kembali.', 'success')
       if (data?.user?.role === 'ADMIN') {
         setTimeout(() => navigate('/admin'), 800)
       } else {
         setTimeout(() => navigate('/'), 800)
       }
-    } catch (error) {
+    },
+    onError: (error) => {
       showToast(error.response?.data?.message || '❌ Gagal login. Periksa koneksi Anda.', 'error')
       console.error(error)
-    } finally {
-      setLoading(false)
     }
+  });
+
+  function handleLogin() {
+    const email = document.getElementById('login-email').value.trim()
+    const password = document.getElementById('login-password').value
+    const e = validate({ email, password })
+    setErrors(e)
+    if (Object.keys(e).length) return
+
+    loginMutation.mutate({ email, password })
   }
 
-  async function handleRegister() {
+  const registerMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await api.post('/auth/register', payload)
+      return res.data
+    },
+    onSuccess: () => {
+      showToast('🎉 Akun berhasil dibuat! Silakan masuk.', 'success')
+      setTimeout(() => setTab('login'), 800)
+    },
+    onError: (error) => {
+      showToast(error.response?.data?.message || '❌ Pendaftaran gagal. Coba lagi nanti.', 'error')
+      console.error(error)
+    }
+  });
+
+  function handleRegister() {
     const fname = document.getElementById('reg-fname').value.trim()
     const lname = document.getElementById('reg-lname').value.trim()
     const email = document.getElementById('reg-email').value.trim()
@@ -89,19 +108,9 @@ export default function Login() {
     const e = validate({ fname, email, phone, regPw, regConfirm })
     setErrors(e)
     if (Object.keys(e).length) return
-    setLoading(true)
 
-    try {
-      const name = lname ? `${fname} ${lname}` : fname
-      await api.post('/auth/register', { name, email, phone, password: regPw })
-      showToast('🎉 Akun berhasil dibuat! Silakan masuk.', 'success')
-      setTimeout(() => setTab('login'), 800)
-    } catch (error) {
-      showToast(error.response?.data?.message || '❌ Pendaftaran gagal. Coba lagi nanti.', 'error')
-      console.error(error)
-    } finally {
-      setLoading(false)
-    }
+    const name = lname ? `${fname} ${lname}` : fname
+    registerMutation.mutate({ name, email, phone, password: regPw })
   }
 
   return (
@@ -159,10 +168,10 @@ export default function Login() {
               </div>
               <button
                 onClick={handleLogin}
-                disabled={loading}
+                disabled={loginMutation.isPending}
                 className="py-3.5 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-60"
               >
-                {loading ? 'Memproses...' : 'Masuk'}
+                {loginMutation.isPending ? 'Memproses...' : 'Masuk'}
               </button>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-slate-200"></div>
@@ -202,10 +211,10 @@ export default function Login() {
               </p>
               <button
                 onClick={handleRegister}
-                disabled={loading}
+                disabled={registerMutation.isPending}
                 className="py-3.5 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-60"
               >
-                {loading ? 'Membuat akun...' : 'Buat Akun'}
+                {registerMutation.isPending ? 'Membuat akun...' : 'Buat Akun'}
               </button>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-slate-200"></div>

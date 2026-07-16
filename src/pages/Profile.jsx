@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 import useAuthStore from '../store/useAuthStore'
 import Navbar from '../components/Navbar.jsx'
@@ -47,11 +47,9 @@ export default function Profile() {
     }
   }
 
-  const handleSaveProfile = async () => {
-    try {
-      showToast('Menyimpan profil...', 'info')
-      
-      // Upload avatar jika ada yang dipilih
+  const queryClient = useQueryClient();
+  const updateProfileMutation = useMutation({
+    mutationFn: async () => {
       let updatedUserObj = null;
       if (selectedFile) {
         const formData = new FormData();
@@ -61,30 +59,31 @@ export default function Profile() {
         });
         updatedUserObj = avatarRes.data.user;
       }
-
-      // Update data text profil
       const res = await api.put('/auth/profile', editForm)
-      
-      // Update state global (Zustand)
+      return { resData: res.data, updatedUserObj };
+    },
+    onSuccess: ({ resData, updatedUserObj }) => {
       if (updatedUserObj) {
-         // Jika avatar diupload, gunakan data terbaru dari avatar API yang mungkin lebih up-to-date
-         // Tapi kita perlu merge dengan data dari profile API jika keduanya diupdate
-         updateUser({ ...res.data.user, avatar_url: updatedUserObj.avatar_url });
+         updateUser({ ...resData.user, avatar_url: updatedUserObj.avatar_url });
       } else {
-         updateUser(res.data.user)
+         updateUser(resData.user)
       }
-      
       setIsEditing(false)
       showToast('Profil berhasil diperbarui! 🎉', 'success')
-      
       if (previewUrl) {
          URL.revokeObjectURL(previewUrl)
          setPreviewUrl(null)
          setSelectedFile(null)
       }
-    } catch (error) {
+    },
+    onError: () => {
       showToast('Gagal memperbarui profil', 'error')
     }
+  });
+
+  const handleSaveProfile = () => {
+    showToast('Menyimpan profil...', 'info')
+    updateProfileMutation.mutate();
   }
 
   // Fetch orders

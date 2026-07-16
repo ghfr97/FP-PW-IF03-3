@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import useCartStore from '../store/useCartStore'
 import useAuthStore from '../store/useAuthStore'
 import api from '../lib/axios'
@@ -14,7 +15,6 @@ export default function Checkout() {
   
   const [paymentMethod, setPaymentMethod] = useState('TRANSFER')
   const [notes, setNotes] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load Midtrans Snap JS dynamically
   useEffect(() => {
@@ -36,28 +36,15 @@ export default function Checkout() {
     }
   }, [])
 
-  const handleCheckout = async () => {
-    if (cartItems.length === 0) return
-    if (!user) {
-      showToast('Silakan login terlebih dahulu', 'error')
-      navigate('/login')
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      // Data yang akan dikirim ke backend
-      const payload = {
-        items: cartItems.map(item => ({ service_id: item.id, qty: item.qty })),
-        notes,
-        payment_method: paymentMethod
-      }
-
+  const checkoutMutation = useMutation({
+    mutationFn: async (payload) => {
       const res = await api.post('/orders/checkout', payload)
-
-      if (paymentMethod === 'TRANSFER' && res.data.token) {
+      return res.data
+    },
+    onSuccess: (data) => {
+      if (paymentMethod === 'TRANSFER' && data.token) {
         // Panggil Midtrans Snap
-        window.snap.pay(res.data.token, {
+        window.snap.pay(data.token, {
           onSuccess: function(result){
             showToast('Pembayaran berhasil!', 'success')
             clearCart()
@@ -83,13 +70,28 @@ export default function Checkout() {
         clearCart()
         navigate('/profile')
       }
-      
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error(error)
       showToast(error.response?.data?.message || 'Gagal membuat pesanan', 'error')
-    } finally {
-      setIsSubmitting(false)
     }
+  });
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return
+    if (!user) {
+      showToast('Silakan login terlebih dahulu', 'error')
+      navigate('/login')
+      return
+    }
+
+    const payload = {
+      items: cartItems.map(item => ({ service_id: item.id, qty: item.qty })),
+      notes,
+      payment_method: paymentMethod
+    }
+
+    checkoutMutation.mutate(payload)
   }
 
   return (
@@ -177,10 +179,10 @@ export default function Checkout() {
                 
                 <button 
                   onClick={handleCheckout} 
-                  disabled={isSubmitting}
+                  disabled={checkoutMutation.isPending}
                   className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none shadow-lg shadow-blue-200 disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Memproses...' : (paymentMethod === 'TRANSFER' ? 'Bayar Sekarang' : 'Buat Pesanan')}
+                  {checkoutMutation.isPending ? 'Memproses...' : (paymentMethod === 'TRANSFER' ? 'Bayar Sekarang' : 'Buat Pesanan')}
                 </button>
               </div>
             </div>

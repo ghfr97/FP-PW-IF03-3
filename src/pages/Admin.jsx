@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Toast, { showToast } from '../components/Toast.jsx'
 
 
@@ -41,25 +42,41 @@ function StatCard({ icon, label, value, sub, bg, text, accent }) {
 }
 
 export default function Admin() {
+  const queryClient = useQueryClient()
   const [page, setPage] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [orders, setOrders] = useState([])
   const [showAddOrder, setShowAddOrder] = useState(false)
   const [filter, setFilter] = useState('semua')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    // Memuat data pesanan menggunakan axios (GET)
-    axios.get('/api/orders.json')
-      .then(response => setOrders(response.data))
-      .catch(err => console.error('Gagal mengambil data pesanan', err))
-  }, [])
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: async () => {
+      const response = await axios.get('/api/orders.json')
+      return response.data
+    }
+  })
 
   const filteredOrders = filter === 'semua' ? orders : orders.filter(o => o.status === filter)
 
-  async function addOrder(e) {
+  const addOrderMutation = useMutation({
+    mutationFn: async (newOrder) => {
+      const res = await axios.post('https://jsonplaceholder.typicode.com/posts', newOrder)
+      return { ...res.data, ...newOrder }
+    },
+    onSuccess: (savedOrder) => {
+      // In a real app we might just invalidate, but since it's mock we update cache
+      queryClient.setQueryData(['admin-orders'], old => [savedOrder, ...old])
+      setShowAddOrder(false)
+      showToast('✅ Pesanan ' + savedOrder.id + ' berhasil ditambahkan!', 'success')
+    },
+    onError: (error) => {
+      showToast('❌ Gagal menambahkan pesanan', 'error')
+      console.error(error)
+    }
+  })
+
+  function addOrder(e) {
     e.preventDefault()
-    setIsSubmitting(true)
     const f = e.target
     const id = '#FW-' + String(Math.floor(Math.random() * 900) + 100)
     
@@ -73,18 +90,7 @@ export default function Admin() {
       status: 'antrian',
     }
 
-    try {
-      // Simulasi HTTP POST request
-      await axios.post('https://jsonplaceholder.typicode.com/posts', newOrder)
-      setOrders(prev => [newOrder, ...prev])
-      setShowAddOrder(false)
-      showToast('✅ Pesanan ' + id + ' berhasil ditambahkan!', 'success')
-    } catch (error) {
-      showToast('❌ Gagal menambahkan pesanan', 'error')
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
+    addOrderMutation.mutate(newOrder)
   }
 
   const navItems = [
@@ -464,8 +470,8 @@ export default function Admin() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddOrder(false)} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-50">
-                  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                <button type="submit" disabled={addOrderMutation.isPending} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none disabled:opacity-50">
+                  {addOrderMutation.isPending ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
             </form>
