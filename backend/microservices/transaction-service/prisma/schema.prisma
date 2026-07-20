@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  MENUNGGU_PICKUP
+  DIJEMPUT
+  DICUCI
+  DISETRIKA
+  DIANTAR
+  SELESAI
+  BATAL
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model Order {
+  id            String        @id
+  user_id       String
+  total_amount  Int
+  status        OrderStatus   @default(MENUNGGU_PICKUP)
+  order_date    DateTime      @default(now())
+  notes         String?       @db.Text
+
+  items         OrderItem[]
+  payments      Payment[]
+}
+
+model OrderItem {
+  id              String   @id @default(uuid())
+  order_id        String
+  service_id      Int
+  qty_or_weight   Decimal  @db.Decimal(8, 2)
+  subtotal_price  Int
+
+  order           Order    @relation(fields: [order_id], references: [id])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  order_id          String
+  amount            Int
+  payment_method    String
+  payment_proof_url String?
+  status            PaymentStatus @default(PENDING)
+  payment_date      DateTime      @default(now())
+
+  order             Order         @relation(fields: [order_id], references: [id])
+}

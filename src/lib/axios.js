@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api', // Sesuaikan dengan port backend
+  baseURL: API_URL,
   withCredentials: true // PENTING: Agar JWT di dalam HttpOnly Cookie terkirim
 });
 
@@ -29,7 +31,7 @@ api.interceptors.response.use((response) => response, async (error) => {
     
     try {
       // Gunakan axios biasa agar tidak masuk ke interceptor api ini (menghindari infinite loop)
-      const res = await axios.post('http://localhost:5001/api/auth/refresh', {}, { withCredentials: true });
+      const res = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
       accessToken = res.data.accessToken;
       
       // Update header request asli dengan token baru
