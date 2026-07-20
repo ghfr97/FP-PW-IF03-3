@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const prisma = require('../utils/prisma');
 
 const verifyToken = async (req, res, next) => {
     try {
@@ -11,13 +10,11 @@ const verifyToken = async (req, res, next) => {
         
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_access_key_123');
         req.userId = decoded.id;
+        req.userRole = decoded.role || 'USER'; // Default fallback
         
-        const user = await prisma.user.findUnique({ where: { id: req.userId } });
-        if (!user) return res.status(401).json({ message: 'User tidak ditemukan' });
-        
-        req.userRole = user.role;
         next();
     } catch (error) {
+        console.error("verifyToken Error:", error.message);
         return res.status(401).json({ message: 'Token tidak valid atau kadaluarsa' });
     }
 };

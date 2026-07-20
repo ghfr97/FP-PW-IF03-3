@@ -142,8 +142,24 @@ export default function Orders() {
     updateStatusMutation.mutate({ id: editTarget.id, status: form.status })
   }
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/orders/${id}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      showToast('✅ Pesanan berhasil dihapus/dibatalkan!', 'success')
+    },
+    onError: () => {
+      showToast('❌ Gagal menghapus pesanan.', 'error')
+    }
+  })
+
   function handleHapus(id) {
-    showToast('⚠️ Fitur hapus pesanan belum didukung backend.', 'error')
+    if (window.confirm(`Apakah Anda yakin ingin menghapus pesanan ${id}?`)) {
+      deleteOrderMutation.mutate(id)
+    }
   }
 
   return (

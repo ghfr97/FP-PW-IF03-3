@@ -87,17 +87,15 @@ exports.updateService = async (req, res) => {
 exports.deleteService = async (req, res) => {
     try {
         const { id } = req.params;
-        const serviceId = Number(id);
-
-        await prisma.service.delete({
-            where: { id: serviceId }
+        const parsedId = parseInt(id);
+        
+        await prisma.service.update({
+            where: { id: parsedId },
+            data: { status: 'INACTIVE' }
         });
-
-        res.json({ message: 'Layanan berhasil dihapus' });
+        
+        res.json({ message: 'Layanan berhasil dinonaktifkan (Soft Delete)' });
     } catch (error) {
-        if (error.code === 'P2025') {
-            return res.status(404).json({ message: 'Layanan tidak ditemukan' });
-        }
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        res.status(500).json({ message: 'Gagal menghapus layanan', error: error.message });
     }
 };

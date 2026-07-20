@@ -69,11 +69,10 @@ exports.createOrderAndPayment = async (req, res) => {
             return res.status(201).json({ message: 'Pesanan COD berhasil dibuat', order });
         }
 
-        const userRes = await axios.get(`${process.env.USER_SERVICE_URL}/api/users`, {
+        const userRes = await axios.get(`${process.env.USER_SERVICE_URL}/api/auth/me`, {
             headers: { Authorization: req.headers.authorization }
         });
-        const users = userRes.data;
-        const user = users.find(u => u.id === req.userId);
+        const user = userRes.data;
 
         const parameter = {
             transaction_details: {
@@ -155,6 +154,19 @@ exports.getAllOrders = async (req, res) => {
         res.json(finalOrders);
     } catch (error) {
         res.status(500).json({ message: 'Terjadi kesalahan server' });
+    }
+};
+
+exports.deleteOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.order.update({
+            where: { id },
+            data: { status: 'BATAL' } // Soft delete
+        });
+        res.json({ message: 'Pesanan berhasil dibatalkan (Soft Delete)' });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal membatalkan pesanan', error: error.message });
     }
 };
 

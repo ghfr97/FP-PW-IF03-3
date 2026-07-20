@@ -34,8 +34,8 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: 'Email atau password salah!' });
         
-        const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
-        const refreshToken = jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+        const accessToken = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ id: user.id, role: user.role }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
         
         await prisma.user.update({
             where: { id: user.id },
@@ -66,7 +66,7 @@ exports.refreshToken = async (req, res) => {
         jwt.verify(refreshToken, JWT_REFRESH_SECRET, (err, decoded) => {
             if (err) return res.status(403).json({ message: 'Refresh token kedaluwarsa atau tidak valid!' });
             
-            const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
+            const accessToken = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '15m' });
             res.json({ accessToken });
         });
     } catch (error) {

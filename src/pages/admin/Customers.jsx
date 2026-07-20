@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
 // ── Modal tambah Pelanggan ──────────────────────────────────────────
@@ -104,19 +104,68 @@ export default function Customers() {
     }
   })
 
+  const queryClient = useQueryClient()
+
+  const createUserMutation = useMutation({
+    mutationFn: async (newUser) => {
+      const response = await api.post('/users', newUser)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+      showToast('✅ Pelanggan berhasil ditambahkan!', 'success')
+      setShowPelanggan(false)
+    },
+    onError: () => {
+      showToast('❌ Gagal menambahkan pelanggan.', 'error')
+    }
+  })
+
+  const updateUserMutation = useMutation({
+    mutationFn: async (updatedUser) => {
+      const { id, ...data } = updatedUser
+      const response = await api.put(`/users/${id}`, data)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+      showToast('✅ Data pelanggan berhasil diperbarui!', 'success')
+      setEditTarget(null)
+    },
+    onError: () => {
+      showToast('❌ Gagal memperbarui data pelanggan.', 'error')
+    }
+  })
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/users/${id}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+      showToast('✅ Pelanggan berhasil dihapus!', 'success')
+    },
+    onError: () => {
+      showToast('❌ Gagal menghapus pelanggan.', 'error')
+    }
+  })
+
   function handlePelanggan(e) {
     e.preventDefault()
-    showToast('⚠️ Fitur tambah pelanggan belum didukung backend.', 'error')
-    setShowPelanggan(false)
+    const form = new FormData(e.target)
+    const data = Object.fromEntries(form.entries())
+    createUserMutation.mutate({ ...data, name: data.customer, role: 'CUSTOMER' })
   }
 
   function handleSave(form) {
-    showToast('⚠️ Fitur edit pelanggan belum didukung backend.', 'error')
-    setEditTarget(null)
+    updateUserMutation.mutate({ ...editTarget, ...form })
   }
 
   function handleHapus(id, name) {
-    showToast('⚠️ Fitur hapus pelanggan belum didukung backend.', 'error')
+    if (window.confirm(`Apakah Anda yakin ingin menghapus pelanggan "${name}"?`)) {
+      deleteUserMutation.mutate(id)
+    }
   }
 
   return (

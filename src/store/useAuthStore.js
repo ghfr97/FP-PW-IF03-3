@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import api, { setAccessToken } from '../lib/axios';
 
+import useCartStore from './useCartStore';
+
 const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
@@ -40,6 +42,8 @@ const useAuthStore = create((set) => ({
     } finally {
         setAccessToken(null);
         set({ user: null, isAuthenticated: false });
+        // Bersihkan keranjang belanja saat logout agar tidak bocor ke akun lain
+        useCartStore.getState().clearCart();
     }
   }
 }));

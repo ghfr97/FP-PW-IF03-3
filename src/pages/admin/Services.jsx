@@ -136,12 +136,31 @@ export default function Services() {
 
   const updateServiceMutation = useMutation({
     mutationFn: async (updatedService) => {
-      // Backend does not have PUT /services/:id currently
-      showToast('⚠️ Fitur edit layanan belum didukung backend.', 'error')
-      throw new Error('Not implemented on backend')
+      const { id, ...data } = updatedService
+      const response = await api.put(`/services/${id}`, data)
+      return response.data
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] })
+      showToast('✅ Layanan berhasil diperbarui!', 'success')
       setEditTarget(null)
+    },
+    onError: () => {
+      showToast('❌ Gagal memperbarui layanan.', 'error')
+    }
+  })
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/services/${id}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] })
+      showToast('✅ Layanan berhasil dihapus!', 'success')
+    },
+    onError: () => {
+      showToast('❌ Gagal menghapus layanan.', 'error')
     }
   })
 
@@ -154,7 +173,9 @@ export default function Services() {
   }
 
   function handleHapus(id, name) {
-    showToast('⚠️ Fitur hapus layanan belum didukung backend.', 'error')
+    if (window.confirm(`Apakah Anda yakin ingin menghapus layanan "${name}"?`)) {
+      deleteServiceMutation.mutate(id)
+    }
   }
 
   const formatRp = (num) => 'Rp ' + (num || 0).toLocaleString('id-ID')

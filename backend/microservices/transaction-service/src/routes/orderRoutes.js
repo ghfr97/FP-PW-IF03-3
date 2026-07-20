@@ -12,6 +12,7 @@ router.get('/me', verifyToken, orderController.getMyOrders);
 // Akses Khusus Admin
 router.get('/all', verifyToken, requireAdmin, orderController.getAllOrders);
 router.put('/:id/status', verifyToken, requireAdmin, validateRequest(updateOrderStatusSchema), orderController.updateOrderStatus);
+router.delete('/:id', verifyToken, requireAdmin, orderController.deleteOrder);
 
 // Rute untuk mengecek fitur Advanced Database
 router.get('/summary', verifyToken, requireAdmin, orderController.getUserOrderSummary);

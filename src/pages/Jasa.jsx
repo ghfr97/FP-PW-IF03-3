@@ -72,7 +72,8 @@ export default function Jasa() {
     queryKey: ['services'],
     queryFn: async () => {
       const response = await api.get('/services');
-      return response.data.map(s => ({
+      const activeServices = response.data.filter(s => s.status === 'ACTIVE');
+      return activeServices.map(s => ({
         id: s.id,
         name: s.name,
         desc: s.description,
