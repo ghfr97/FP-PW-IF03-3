@@ -71,7 +71,7 @@ export default function Jasa() {
   const { data: services, isLoading: loading, isError } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
-      const response = await api.get('/services')
+      const response = await api.get('/services');
       return response.data.map(s => ({
         id: s.id,
         name: s.name,
@@ -83,7 +83,7 @@ export default function Jasa() {
         highlight: s.name === 'Cuci + Setrika',
         badge: s.name === 'Express Laundry' ? 'KILAT' : null,
         badgeColor: 'bg-red-100 text-red-600'
-      }))
+      }));
     }
   })
 
