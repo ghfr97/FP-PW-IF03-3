@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '../../lib/axios'
 import useAuthStore from '../../store/useAuthStore'
 import Toast, { showToast } from '../../components/Toast.jsx'
@@ -18,6 +18,8 @@ export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const user = useAuthStore(state => state.user)
@@ -36,6 +38,25 @@ export default function AdminLayout() {
       return response.data
     },
     enabled: isAuthenticated && user?.role === 'ADMIN'
+  })
+
+  const { data: notifications = [], refetch: refetchNotifications } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: async () => {
+      const response = await api.get('/notifications')
+      return response.data
+    },
+    enabled: isAuthenticated && user?.role === 'ADMIN',
+    refetchInterval: 10000
+  })
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.patch(`/notifications/${id}/read`)
+    },
+    onSuccess: () => {
+      refetchNotifications()
+    }
   })
 
   const antrian = orders.filter(o => o.status === 'MENUNGGU_PICKUP').length
@@ -127,19 +148,47 @@ export default function AdminLayout() {
           </h1>
           <div className="hidden md:flex items-center gap-2 bg-blue-50 rounded-2xl px-4 py-2 flex-1 max-w-xs border border-blue-100">
             <span className="text-slate-400 text-sm">🔍</span>
-            <input type="text" placeholder="Cari pesanan, pelanggan..." className="bg-transparent border-none text-sm text-slate-700 placeholder-slate-400 outline-none flex-1 w-full" />
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Cari pesanan, pelanggan, layanan..." className="bg-transparent border-none text-sm text-slate-700 placeholder-slate-400 outline-none flex-1 w-full" />
           </div>
-          <button
-            onClick={() => showToast('📬 Kamu punya 3 notifikasi baru!')}
-            className="relative w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg cursor-pointer border border-blue-100 hover:bg-blue-100 transition-all"
-          >
-            🔔
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border border-white"></span>
-          </button>
+          
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg cursor-pointer border border-blue-100 hover:bg-blue-100 transition-all"
+            >
+              🔔
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-red-500 border border-white text-white text-[10px] font-bold flex items-center justify-center translate-x-1/4 -translate-y-1/4">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden z-50">
+                <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-800">Notifikasi ({notifications.length})</h3>
+                  <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer text-sm">✕</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-slate-500">Tidak ada notifikasi baru.</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer flex justify-between items-start gap-3" onClick={() => markAsReadMutation.mutate(n.id)}>
+                        <p className="text-sm text-slate-700 leading-tight m-0">{n.message}</p>
+                        <span className="w-2 h-2 rounded-full bg-blue-500 mt-1 flex-shrink-0"></span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+          <Outlet context={{ searchQuery }} />
         </main>
       </div>
     </div>

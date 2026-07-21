@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useOutletContext } from 'react-router-dom'
 import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
+
 // ── Modal tambah Pelanggan ──────────────────────────────────────────
 function ModalPelanggan({ onClose, onSave }) {
   return (
@@ -80,7 +82,9 @@ function Field({ label, name, type, placeholder }) {
 // ── Halaman Pelanggan ─────────────────────────────────────────────
 
 export default function Customers() {
-  const [showPelanggan,  setShowPelanggan]  = useState(false)
+  const queryClient = useQueryClient()
+  const { searchQuery } = useOutletContext() || { searchQuery: '' }
+  const [showTambah, setShowTambah] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
 
   const { data: rawCustomers = [] } = useQuery({
@@ -104,7 +108,11 @@ export default function Customers() {
     }
   })
 
-  const queryClient = useQueryClient()
+  const filteredCustomers = customers.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.phone && c.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
 
   const createUserMutation = useMutation({
     mutationFn: async (newUser) => {
@@ -113,11 +121,13 @@ export default function Customers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+      setShowTambah(false)
       showToast('✅ Pelanggan berhasil ditambahkan!', 'success')
-      setShowPelanggan(false)
+      api.post('/notifications', { message: 'Pelanggan baru telah ditambahkan' }).catch(() => {})
     },
-    onError: () => {
-      showToast('❌ Gagal menambahkan pelanggan.', 'error')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal menambahkan pelanggan.'
+      showToast(`❌ ${msg}`, 'error')
     }
   })
 
@@ -131,9 +141,11 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
       showToast('✅ Data pelanggan berhasil diperbarui!', 'success')
       setEditTarget(null)
+      api.post('/notifications', { message: 'Data pelanggan telah diperbarui' }).catch(() => {})
     },
-    onError: () => {
-      showToast('❌ Gagal memperbarui data pelanggan.', 'error')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal memperbarui data pelanggan.'
+      showToast(`❌ ${msg}`, 'error')
     }
   })
 
@@ -145,9 +157,11 @@ export default function Customers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
       showToast('✅ Pelanggan berhasil dihapus!', 'success')
+      api.post('/notifications', { message: 'Seorang pelanggan telah dihapus' }).catch(() => {})
     },
-    onError: () => {
-      showToast('❌ Gagal menghapus pelanggan.', 'error')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal menghapus pelanggan.'
+      showToast(`❌ ${msg}`, 'error')
     }
   })
 
@@ -170,19 +184,19 @@ export default function Customers() {
 
   return (
     <div>
-      {showPelanggan && <ModalPelanggan onClose={() => setShowPelanggan(false)} onSave={handlePelanggan} />}
+      {showTambah && <ModalPelanggan onClose={() => setShowTambah(false)} onSave={handlePelanggan} />}
       {editTarget && <ModalEdit customer={editTarget} onClose={() => setEditTarget(null)} onSave={handleSave} />}
 
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-500 text-sm">{customers.length} pelanggan terdaftar</p>
-        <button onClick={() => setShowPelanggan(true)}
-          className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm hover:bg-blue-700 transition-all cursor-pointer border-none">
+        <p className="text-slate-500 text-sm">{filteredCustomers.length} pelanggan terdaftar</p>
+        <button onClick={() => setShowTambah(true)}
+          className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm hover:bg-blue-700 transition-all cursor-pointer border-none shadow-sm">
           + Tambah Pelanggan
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {customers.map(c => (
+        {filteredCustomers.map(c => (
           <div key={c.id} className="bg-white rounded-3xl p-6 border border-blue-50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <div className="flex items-start gap-4 mb-4">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm flex-shrink-0 ${c.color}`}>{c.init}</div>

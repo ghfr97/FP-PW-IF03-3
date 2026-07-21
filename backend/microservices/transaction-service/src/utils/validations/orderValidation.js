@@ -20,4 +20,15 @@ const updateOrderStatusSchema = z.object({
   })
 });
 
-module.exports = { createOrderSchema, updateOrderStatusSchema };
+const adminCreateOrderSchema = z.object({
+  body: z.object({
+    user_id: z.string().min(1, 'User ID is required'),
+    items: z.array(z.object({
+      service_id: z.number().int().positive('Invalid service ID'),
+      qty: z.number().int().positive('Quantity must be at least 1')
+    })).min(1, 'Order must contain at least one item'),
+    notes: z.string().optional()
+  })
+});
+
+module.exports = { createOrderSchema, updateOrderStatusSchema, adminCreateOrderSchema };

@@ -5,6 +5,7 @@ require('dotenv').config();
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.listen(PORT, () => {
     console.log(`✅ Transaction Service berjalan di http://localhost:${PORT}`);

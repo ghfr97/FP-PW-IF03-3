@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useOutletContext } from 'react-router-dom'
 import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
 
@@ -108,16 +109,22 @@ function ModalTambah({ onClose, onSave, isPending }) {
 
 export default function Services() {
   const queryClient = useQueryClient()
+  const { searchQuery } = useOutletContext() || { searchQuery: '' }
   const [editTarget, setEditTarget] = useState(null)
   const [showTambah, setShowTambah] = useState(false)
 
   const { data: services = [] } = useQuery({
     queryKey: ['admin-services'],
     queryFn: async () => {
-      const response = await api.get('/services')
+      const response = await api.get('/services/admin')
       return response.data
     }
   })
+
+  const filteredServices = services.filter(s => 
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
 
   const createServiceMutation = useMutation({
     mutationFn: async (newService) => {
@@ -128,6 +135,7 @@ export default function Services() {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] })
       setShowTambah(false)
       showToast('✅ Layanan berhasil ditambahkan!', 'success')
+      api.post('/notifications', { message: 'Layanan baru telah ditambahkan' }).catch(() => {})
     },
     onError: () => {
       showToast('❌ Gagal menambahkan layanan.', 'error')
@@ -144,9 +152,25 @@ export default function Services() {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] })
       showToast('✅ Layanan berhasil diperbarui!', 'success')
       setEditTarget(null)
+      api.post('/notifications', { message: 'Data layanan telah diperbarui' }).catch(() => {})
     },
     onError: () => {
       showToast('❌ Gagal memperbarui layanan.', 'error')
+    }
+  })
+
+  const toggleServiceMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      const response = await api.patch(`/services/${id}/status`, { status })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] })
+      showToast('✅ Status layanan berhasil diubah!', 'success')
+      api.post('/notifications', { message: 'Status layanan telah diubah' }).catch(() => {})
+    },
+    onError: () => {
+      showToast('❌ Gagal mengubah status layanan.', 'error')
     }
   })
 
@@ -157,7 +181,8 @@ export default function Services() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] })
-      showToast('✅ Layanan berhasil dihapus!', 'success')
+      showToast('✅ Layanan berhasil dihapus permanen!', 'success')
+      api.post('/notifications', { message: 'Sebuah layanan telah dihapus' }).catch(() => {})
     },
     onError: () => {
       showToast('❌ Gagal menghapus layanan.', 'error')
@@ -186,7 +211,7 @@ export default function Services() {
       {showTambah && <ModalTambah onClose={() => setShowTambah(false)} onSave={handleTambah} isPending={createServiceMutation.isPending} />}
 
       <div className="flex justify-between items-center">
-        <p className="text-slate-500 text-sm">{services.length} layanan terdaftar</p>
+        <p className="text-slate-500 text-sm">{filteredServices.length} layanan terdaftar</p>
         <button onClick={() => setShowTambah(true)}
           className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm hover:bg-blue-700 transition-all cursor-pointer border-none shadow-sm">
           + Tambah Layanan
@@ -204,7 +229,7 @@ export default function Services() {
               </tr>
             </thead>
             <tbody>
-              {services.map(s => (
+              {filteredServices.map(s => (
                 <tr key={s.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
                   <td className="px-4 py-4 text-slate-800 font-semibold">{s.name}</td>
                   <td className="px-4 py-4 text-slate-400">{s.description || '-'}</td>
@@ -217,9 +242,14 @@ export default function Services() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex gap-2">
+                      <button title={s.status === 'ACTIVE' ? "Nonaktifkan" : "Aktifkan"} 
+                        onClick={() => toggleServiceMutation.mutate({ id: s.id, status: s.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
+                        className={`w-7 h-7 rounded-lg transition-all cursor-pointer border text-xs ${s.status === 'ACTIVE' ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'}`}>
+                        {s.status === 'ACTIVE' ? '⏸️' : '▶️'}
+                      </button>
                       <button title="Edit" onClick={() => setEditTarget(s)}
                         className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all cursor-pointer border border-blue-100 text-xs">✏️</button>
-                      <button title="Hapus" onClick={() => handleHapus(s.id, s.name)}
+                      <button title="Hapus Permanen" onClick={() => handleHapus(s.id, s.name)}
                         className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all cursor-pointer border border-red-100 text-xs">🗑️</button>
                     </div>
                   </td>

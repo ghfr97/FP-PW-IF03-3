@@ -220,3 +220,61 @@ exports.getUserOrderSummary = async (req, res) => {
 exports.applyDiscount = async (req, res) => {
     res.json({ message: 'Stored Procedure tidak berlaku di arsitektur microservice.' });
 };
+
+exports.createOrderAdmin = async (req, res) => {
+    try {
+        const { user_id, items, notes } = req.body;
+        
+        let total_amount = 0;
+        const orderItemsData = [];
+        
+        const serviceResponse = await axios.get(`${process.env.CATALOG_SERVICE_URL}/api/services`);
+        const services = serviceResponse.data;
+        
+        for (const item of items) {
+            const service = services.find(s => s.id === item.service_id);
+            if (service) {
+                const subtotal = service.price * item.qty;
+                total_amount += subtotal;
+                orderItemsData.push({
+                    service_id: service.id,
+                    qty_or_weight: item.qty,
+                    subtotal_price: subtotal
+                });
+            }
+        }
+        
+        const order_id = 'ORD-' + uuidv4().substring(0, 8).toUpperCase();
+        
+        const order = await prisma.$transaction(async (tx) => {
+            const newOrder = await tx.order.create({
+                data: {
+                    id: order_id,
+                    user_id: user_id,
+                    total_amount,
+                    notes,
+                    items: {
+                        create: orderItemsData
+                    }
+                },
+                include: { items: true }
+            });
+
+            await tx.payment.create({
+                data: {
+                    order_id: newOrder.id,
+                    amount: total_amount,
+                    payment_method: 'MANUAL',
+                    status: 'PENDING'
+                }
+            });
+
+            return newOrder;
+        });
+
+        res.status(201).json({ message: 'Pesanan manual berhasil dibuat', order });
+    } catch (error) {
+        console.error("Error createOrderAdmin:", error);
+        res.status(500).json({ message: 'Gagal membuat pesanan manual', error: error.message });
+    }
+};

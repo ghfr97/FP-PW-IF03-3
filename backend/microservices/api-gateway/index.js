@@ -26,10 +26,11 @@ app.use('/api/users', proxy(USER_SERVICE_URL, { proxyReqPathResolver: req => '/a
 // 2. Catalog Service (Mengurus master data jasa laundry)
 app.use('/api/services', proxy(CATALOG_SERVICE_URL, { proxyReqPathResolver: req => '/api/services' + req.url }));
 
-// 3. Transaction Service (Mengurus Order, Payment, Analytics)
+// 3. Transaction Service (Mengurus Order, Payment, Analytics, Notifications)
 app.use('/api/orders', proxy(TRANSACTION_SERVICE_URL, { proxyReqPathResolver: req => '/api/orders' + req.url }));
 app.use('/api/payments', proxy(TRANSACTION_SERVICE_URL, { proxyReqPathResolver: req => '/api/payments' + req.url }));
 app.use('/api/analytics', proxy(TRANSACTION_SERVICE_URL, { proxyReqPathResolver: req => '/api/analytics' + req.url }));
+app.use('/api/notifications', proxy(TRANSACTION_SERVICE_URL, { proxyReqPathResolver: req => '/api/notifications' + req.url }));
 
 // Fallback Route
 app.use('/', (req, res) => {

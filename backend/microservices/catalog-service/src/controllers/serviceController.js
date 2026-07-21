@@ -89,13 +89,37 @@ exports.deleteService = async (req, res) => {
         const { id } = req.params;
         const parsedId = parseInt(id);
         
-        await prisma.service.update({
-            where: { id: parsedId },
-            data: { status: 'INACTIVE' }
+        await prisma.service.delete({
+            where: { id: parsedId }
         });
         
-        res.json({ message: 'Layanan berhasil dinonaktifkan (Soft Delete)' });
+        res.json({ message: 'Layanan berhasil dihapus permanen' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal menghapus layanan', error: error.message });
+    }
+};
+
+exports.getAllServicesAdmin = async (req, res) => {
+    try {
+        const services = await prisma.service.findMany();
+        res.json(services);
+    } catch (error) {
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+    }
+};
+
+exports.toggleServiceStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        const updatedService = await prisma.service.update({
+            where: { id: parseInt(id) },
+            data: { status }
+        });
+        
+        res.json({ message: `Layanan berhasil diubah menjadi ${status}`, service: updatedService });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengubah status layanan', error: error.message });
     }
 };

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useOutletContext } from 'react-router-dom'
 import api from '../../lib/axios'
 import { showToast } from '../../components/Toast.jsx'
 
@@ -10,24 +11,32 @@ const statusMap = {
 }
 
 // ── Modal tambah pesanan ──────────────────────────────────────────
-function ModalTambah({ onClose, onSave }) {
+function ModalTambah({ onClose, onSave, customers, services }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl p-7 w-full max-w-md border border-blue-100 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-slate-900 font-display font-bold text-xl">Tambah Pesanan</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer text-lg leading-none">✕</button>
         </div>
         <form onSubmit={onSave} className="space-y-4">
-          <Field label="Nama Pelanggan" name="customer" type="text"   placeholder="Ahmad Fauzan" />
-          <Field label="Berat (kg)"     name="weight"   type="number" placeholder="5" />
-          <Field label="Tanggal"        name="date"     type="date" />
           <div>
-            <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Layanan</label>
-            <select name="service" required className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all">
-              {serviceOptions.map(s => <option key={s}>{s}</option>)}
+            <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Pelanggan</label>
+            <select name="user_id" required className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all">
+              <option value="">Pilih Pelanggan...</option>
+              {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">Layanan</label>
+            <select name="service_id" required className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all">
+              <option value="">Pilih Layanan...</option>
+              {services.map(s => <option key={s.id} value={s.id}>{s.name} - Rp {s.price.toLocaleString('id-ID')}{s.unit}</option>)}
+            </select>
+          </div>
+          <Field label="Kuantitas / Berat" name="qty" type="number" placeholder="Misal: 5" />
+          <Field label="Catatan" name="notes" type="text" placeholder="Catatan tambahan (opsional)" />
+          
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
             <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">Simpan</button>
@@ -51,7 +60,7 @@ function ModalEdit({ order, onClose, onSave, isPending }) {
       <div className="bg-white rounded-3xl p-7 w-full max-w-md border border-blue-100 shadow-2xl">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-slate-900 font-display font-bold text-xl">Edit Pesanan</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer text-lg leading-none">✕</button>
         </div>
         <p className="text-blue-500 text-xs font-mono font-bold mb-5">{order.id}</p>
 
@@ -82,8 +91,8 @@ function ModalEdit({ order, onClose, onSave, isPending }) {
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} disabled={isPending} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
-          <button onClick={() => onSave(form)} disabled={isPending} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">{isPending ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
+          <button type="button" onClick={onClose} disabled={isPending} className="flex-1 py-3 border border-blue-200 text-slate-600 font-semibold rounded-2xl hover:bg-blue-50 transition-all cursor-pointer bg-white">Batal</button>
+          <button type="button" onClick={() => onSave(form)} disabled={isPending} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all cursor-pointer border-none">{isPending ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
         </div>
       </div>
     </div>
@@ -95,7 +104,7 @@ function Field({ label, name, type, placeholder }) {
   return (
     <div>
       <label className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1.5 block">{label}</label>
-      <input name={name} type={type} placeholder={placeholder} required
+      <input name={name} type={type} placeholder={placeholder} required={name !== 'notes'}
         className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-2xl text-slate-800 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all" />
     </div>
   )
@@ -103,6 +112,7 @@ function Field({ label, name, type, placeholder }) {
 
 export default function Orders() {
   const queryClient = useQueryClient()
+  const { searchQuery } = useOutletContext() || { searchQuery: '' }
   const [filter,      setFilter]      = useState('SEMUA')
   const [showTambah,  setShowTambah]  = useState(false)
   const [editTarget,  setEditTarget]  = useState(null)   // order yg sedang diedit
@@ -115,6 +125,39 @@ export default function Orders() {
     }
   })
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ['admin-customers'],
+    queryFn: async () => {
+      const response = await api.get('/users/customers')
+      return response.data
+    }
+  })
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const response = await api.get('/services')
+      return response.data
+    }
+  })
+
+  const createOrderMutation = useMutation({
+    mutationFn: async (orderData) => {
+      const response = await api.post('/orders/admin', orderData)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      showToast('✅ Pesanan berhasil ditambahkan!', 'success')
+      setShowTambah(false)
+      api.post('/notifications', { message: 'Pesanan baru telah ditambahkan' }).catch(() => {})
+    },
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal menambahkan pesanan.'
+      showToast(`❌ ${msg}`, 'error')
+    }
+  })
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }) => {
       const response = await api.put(`/orders/${id}/status`, { status })
@@ -124,18 +167,32 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
       showToast('✅ Status pesanan berhasil diperbarui!', 'success')
       setEditTarget(null)
+      api.post('/notifications', { message: 'Status pesanan telah diperbarui' }).catch(() => {})
     },
-    onError: () => {
-      showToast('❌ Gagal memperbarui status.', 'error')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal memperbarui status.'
+      showToast(`❌ ${msg}`, 'error')
     }
   })
 
-  const filtered = filter === 'SEMUA' ? orders : orders.filter(o => o.status === filter)
+  const filtered = (filter === 'SEMUA' ? orders : orders.filter(o => o.status === filter))
+    .filter(o => 
+      o.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (o.user && o.user.name && o.user.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
 
   function handleTambah(e) {
     e.preventDefault()
-    showToast('⚠️ Fitur tambah pesanan manual belum didukung backend.', 'error')
-    setShowTambah(false)
+    const form = new FormData(e.target)
+    const payload = {
+      user_id: form.get('user_id'),
+      items: [{
+        service_id: parseInt(form.get('service_id')),
+        qty: parseInt(form.get('qty'))
+      }],
+      notes: form.get('notes')
+    }
+    createOrderMutation.mutate(payload)
   }
 
   function handleEdit(form) {
@@ -150,9 +207,11 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
       showToast('✅ Pesanan berhasil dihapus/dibatalkan!', 'success')
+      api.post('/notifications', { message: 'Pesanan telah dihapus' }).catch(() => {})
     },
-    onError: () => {
-      showToast('❌ Gagal menghapus pesanan.', 'error')
+    onError: (error) => {
+      const msg = error.response?.data?.message || 'Gagal menghapus pesanan.'
+      showToast(`❌ ${msg}`, 'error')
     }
   })
 
@@ -164,7 +223,7 @@ export default function Orders() {
 
   return (
     <div className="space-y-5">
-      {showTambah && <ModalTambah onClose={() => setShowTambah(false)} onSave={handleTambah} />}
+      {showTambah && <ModalTambah onClose={() => setShowTambah(false)} onSave={handleTambah} customers={customers} services={services} />}
       {editTarget  && <ModalEdit  order={editTarget} onClose={() => setEditTarget(null)} onSave={handleEdit} isPending={updateStatusMutation.isPending} />}
 
       {/* Toolbar */}
